@@ -1,35 +1,138 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Freedom ROI Calculator</title>
+    <title>Freedom ROI Calculator | The Value of Your Time</title>
+    
+    <!-- Meta / Open Graph -->
+    <meta name="description" content="Calculate the real ROI of buying time-saving appliances. Privacy-first, local calculation.">
+    <meta property="og:title" content="Freedom ROI Calculator">
+    <meta property="og:description" content="Is that robot vacuum an investment or a toy? Find out now.">
+    <meta property="og:image" content="https://ui-avatars.com/api/?name=ROI&background=0f172a&color=fff&size=512">
+    <meta property="og:type" content="website">
+
+    <!-- Favicon: Money with Wings -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💸</text></svg>">
+    
+    <!-- Dependencies -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+
+    <!-- Custom Config -->
     <style>
+        :root {
+            --accent-color: #10b981; /* Default: Emerald-500 */
+            --accent-hover: #059669;
+            --gold: #D4AF37;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #FFFFFF;
-            color: #0F172A;
+            background-color: #ffffff;
+            color: #0f172a; /* Slate-900 */
             overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
         }
+
+        /* --- Custom Range Slider --- */
+        input[type=range] {
+            -webkit-appearance: none; 
+            background: transparent; 
+        }
+        
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            cursor: pointer;
+            margin-top: -10px; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: transform 0.1s, background-color 0.3s;
+        }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            border-radius: 9999px;
+            /* Gradient background is set via JS */
+        }
+
+        /* --- Toggle Switch (iOS Style) --- */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: var(--accent-color);
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: var(--accent-color);
+        }
+        
+        /* --- Animations --- */
         .slide-panel {
-            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+            opacity: 0;
+        }
+        
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+             from { opacity: 0; transform: translateY(20px); }
+             to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse-heart {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+        }
+
+        .heartbeat {
+            animation: pulse-heart 2s infinite;
+        }
+
+        /* --- Utilities --- */
+        .text-accent { color: var(--accent-color); transition: color 0.5s; }
+        .bg-accent { background-color: var(--accent-color); transition: background-color 0.5s; }
+        .border-accent { border-color: var(--accent-color); transition: border-color 0.5s; }
+        
+        /* Modal Backdrop */
+        .backdrop {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
         }
     </style>
-<script type="importmap">
+    <script type="importmap">
 {
   "imports": {
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "react": "https://esm.sh/react@^19.2.4",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/"
+    "react": "https://esm.sh/react@18.2.0?dev",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client?dev",
+    "react-dom": "https://esm.sh/react-dom@18.2.0?dev",
+    "react-dom/": "https://esm.sh/react-dom@^18.2.0/",
+    "react/": "https://esm.sh/react@^18.2.0/"
   }
 }
 </script>
 </head>
-<body>
+<body class="min-h-screen flex flex-col relative">
     <div id="root"></div>
+    <script type="module" src="./index.tsx"></script>
 </body>
 </html>

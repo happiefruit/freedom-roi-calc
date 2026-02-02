@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { APPLIANCES } from './constants';
 import { getRegionalSettings, calculateROI, formatCurrency } from './utils';
 import { RegionalSettings, CalculationResults } from './types';
@@ -8,6 +7,8 @@ const App: React.FC = () => {
   const [regional] = useState<RegionalSettings>(getRegionalSettings());
   const [selectedApplianceId, setSelectedApplianceId] = useState(APPLIANCES[0].id);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
   const [results, setResults] = useState<CalculationResults | null>(null);
 
   // Form Inputs
@@ -24,13 +25,28 @@ const App: React.FC = () => {
     APPLIANCES.find(a => a.id === selectedApplianceId) || APPLIANCES[0]
   , [selectedApplianceId]);
 
-  // Load defaults when appliance changes, but only if not already editing custom values for that specific session
-  // For simplicity in this SPA, we reset to defaults on switch.
   useEffect(() => {
     setCost(selectedAppliance.defaultCost.toString());
     setFrequency(selectedAppliance.defaultFrequency);
     setTimePerTask(selectedAppliance.defaultTimePerTask);
   }, [selectedAppliance]);
+
+  // Load privacy settings
+  useEffect(() => {
+    const stored = localStorage.getItem('analyticsConsent');
+    if (stored === 'true') {
+        setAnalyticsEnabled(true);
+    }
+  }, []);
+
+  // Refresh icons when UI changes
+  useEffect(() => {
+    // @ts-ignore
+    if (window.lucide) {
+        // @ts-ignore
+        window.lucide.createIcons();
+    }
+  });
 
   const handleCalculate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,15 +74,52 @@ const App: React.FC = () => {
 Freedom ROI Analysis: ${selectedAppliance.name}
 ---
 Annual Hours Reclaimed: ${results.annualHoursSaved.toFixed(1)} hrs
-Financial Break-even: ${results.breakEvenMonths.toFixed(1)} months
+Financial Break-even: ${results.breakEvenMonths > 120 ? '10+ Years' : results.breakEvenMonths.toFixed(1) + ' months'}
 Lifetime ROI (10yr): ${results.lifetimeRoi.toFixed(0)}%
     `.trim();
     navigator.clipboard.writeText(text);
-    // Could add a toast here, but alert is fine for minimalist req
     alert('Summary copied!');
   };
 
+  const toggleAnalytics = (enabled: boolean) => {
+    setAnalyticsEnabled(enabled);
+    localStorage.setItem('analyticsConsent', String(enabled));
+  };
+
   const isFormValid = cost && parseFloat(cost) > 0;
+
+  // Helper for conditional formatting of small numbers
+  const formatMetric = (val: number) => val < 10 && val > 0 ? val.toFixed(1) : val.toFixed(0);
+
+  // Helper to determine 'Worth It' status
+  const getVerdict = () => {
+    if (!results) return null;
+    const costNum = parseFloat(cost) || 0;
+    // If annual return is less than 5% of cost, it's low ROI
+    const isLowRoi = results.annualValueSaved < (costNum * 0.05);
+    const breakEvenText = results.breakEvenMonths > 120 ? "10+ Years" : results.breakEvenMonths.toFixed(1);
+    
+    // Snarky Headlines for bad ROI
+    let headline = "Reclaimed every single year.";
+    let title = "The Verdict";
+    let titleColor = "text-emerald-600";
+    let bigText = <>{results.annualHoursSaved.toFixed(1)} <span className="text-slate-300">Hours</span></>;
+    
+    if (isLowRoi) {
+       titleColor = "text-rose-500";
+       if (results.breakEvenMonths > 600) {
+           bigText = <span className="text-5xl md:text-7xl">You'll be retired first.</span>;
+           headline = `At this rate, it takes ${breakEvenText} to pay off.`;
+       } else {
+           bigText = <span className="text-5xl md:text-7xl">Stick to the broom?</span>;
+           headline = "This is a luxury, not an investment.";
+       }
+    }
+
+    return { isLowRoi, breakEvenText, title, titleColor, bigText, headline };
+  };
+
+  const verdict = getVerdict();
 
   return (
     <div className="min-h-screen bg-white text-slate-900 flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
@@ -77,7 +130,7 @@ Lifetime ROI (10yr): ${results.lifetimeRoi.toFixed(0)}%
       </div>
 
       {/* Screen A: Input Form */}
-      <main className="max-w-2xl w-full z-10 transition-all duration-700 ease-in-out">
+      <main className="max-w-2xl w-full z-10 transition-all duration-700 ease-in-out flex-grow flex flex-col justify-center">
         <header className="mb-10">
           <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4 leading-[0.9]">
             How much is your <br/><span className="bg-slate-900 text-white px-2">freedom</span> worth?
@@ -155,7 +208,7 @@ Lifetime ROI (10yr): ${results.lifetimeRoi.toFixed(0)}%
              />
           </div>
 
-          {/* Dynamic Time Input */}
+          {/* Dynamic Time Input with Sanity Check */}
           <div>
               <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">
                 {selectedAppliance.timeTaskLabel}
@@ -168,6 +221,14 @@ Lifetime ROI (10yr): ${results.lifetimeRoi.toFixed(0)}%
                   className="w-full text-3xl font-bold bg-transparent border-b-4 border-slate-900 focus:outline-none py-2"
                 />
                 <span className="absolute right-0 bottom-4 text-sm font-bold text-slate-400">MINUTES</span>
+                
+                {/* Sanity Check Tooltip */}
+                {timePerTask > 0 && timePerTask < 5 && (
+                    <div className="absolute left-0 -bottom-8 text-xs text-amber-600 font-bold flex items-center gap-1 animate-pulse">
+                        <i data-lucide="alert-circle" className="w-4 h-4"></i>
+                        Only {timePerTask} min? You're a speed-cleaner!
+                    </div>
+                )}
               </div>
           </div>
 
@@ -206,6 +267,47 @@ Lifetime ROI (10yr): ${results.lifetimeRoi.toFixed(0)}%
         </form>
       </main>
 
+      {/* Footer */}
+      <footer className="w-full bg-slate-900 text-slate-400 py-12 px-6 z-20 mt-auto rounded-t-3xl md:rounded-t-[3rem] -mx-6 mb-[-1.5rem] md:mb-[-1.5rem] relative top-6">
+        <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
+            <div className="space-y-4">
+                <div className="text-white font-black uppercase tracking-widest flex items-center gap-2">
+                    <span className="text-2xl">💸</span> Freedom ROI
+                </div>
+                <p className="leading-relaxed">
+                    Privacy First: No tracking by default. All calculations happen locally on your device.
+                </p>
+                <button 
+                  onClick={() => setIsPrivacyOpen(true)}
+                  className="text-xs font-bold uppercase tracking-wider text-emerald-500 hover:text-emerald-400 transition-colors underline decoration-dotted underline-offset-4"
+                >
+                    Analytics Settings
+                </button>
+            </div>
+
+            <div className="space-y-4 md:text-right">
+                <h4 className="text-white font-bold uppercase tracking-widest text-xs">Support</h4>
+                <ul className="space-y-3">
+                    <li>
+                        <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 md:justify-end hover:text-white transition-colors">
+                            <i data-lucide="linkedin" className="w-4 h-4"></i>
+                            Connect on LinkedIn
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://buymeacoffee.com/happiefruit" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 md:justify-end hover:text-white transition-colors">
+                            <i data-lucide="coffee" className="w-4 h-4 text-yellow-400"></i>
+                            Buy a Coffee
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div className="max-w-4xl mx-auto mt-12 pt-8 border-t border-slate-800 text-center text-xs text-slate-600 uppercase tracking-widest">
+            &copy; {new Date().getFullYear()} Freedom ROI Calculator
+        </div>
+      </footer>
+
       {/* Screen B: Results Slide-over */}
       <div 
         className={`fixed inset-0 z-50 bg-white slide-panel overflow-y-auto duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isPanelOpen ? 'translate-x-0' : 'translate-x-full'}`}
@@ -222,16 +324,16 @@ Lifetime ROI (10yr): ${results.lifetimeRoi.toFixed(0)}%
             </button>
           </nav>
 
-          {results && (
+          {results && verdict && (
             <div className="flex-1 pb-24">
               
-              {/* Primary Headline */}
+              {/* Primary Headline with Conditional Logic */}
               <header className="mb-16 animate-fade-in-up">
-                <span className="text-xs font-black uppercase tracking-[0.3em] text-emerald-600 mb-2 block">The Verdict</span>
-                <h2 className="text-7xl md:text-9xl font-black tracking-tighter leading-none mb-4">
-                  {results.annualHoursSaved.toFixed(0)} <span className="text-slate-300">Hours</span>
+                <span className={`text-xs font-black uppercase tracking-[0.3em] mb-2 block ${verdict.titleColor}`}>{verdict.title}</span>
+                <h2 className="text-7xl md:text-9xl font-black tracking-tighter leading-none mb-4 break-words">
+                  {verdict.bigText}
                 </h2>
-                <p className="text-2xl font-medium text-slate-500">Reclaimed every single year.</p>
+                <p className="text-2xl font-medium text-slate-500">{verdict.headline}</p>
               </header>
 
               {/* Secondary Data Grid */}
@@ -239,22 +341,27 @@ Lifetime ROI (10yr): ${results.lifetimeRoi.toFixed(0)}%
                 <div className="space-y-2">
                     <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Financial Break-even</p>
                     <div className="flex items-baseline gap-2">
-                        <span className="text-5xl font-black text-slate-900">{results.breakEvenMonths.toFixed(1)}</span>
-                        <span className="text-xl font-bold text-slate-500">Months</span>
+                        <span className="text-5xl font-black text-slate-900">{verdict.breakEvenText}</span>
+                        {!verdict.breakEvenText.includes('Year') && <span className="text-xl font-bold text-slate-500">Months</span>}
                     </div>
-                    <div className="w-full bg-slate-100 h-2 rounded-full mt-4 overflow-hidden">
-                        <div className="bg-emerald-500 h-full" style={{ width: `${Math.min(100, (12/results.breakEvenMonths)*100)}%` }}></div>
-                    </div>
+                    {/* Only show progress bar if break even is reasonable */}
+                    {!verdict.breakEvenText.includes('Year') && (
+                        <div className="w-full bg-slate-100 h-2 rounded-full mt-4 overflow-hidden">
+                            <div className="bg-emerald-500 h-full" style={{ width: `${Math.min(100, (12/results.breakEvenMonths)*100)}%` }}></div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="space-y-2">
                     <p className="text-xs font-bold uppercase tracking-widest text-slate-400">10-Year ROI</p>
                     <div className="flex items-baseline gap-2">
-                        <span className="text-5xl font-black text-slate-900">{results.lifetimeRoi.toFixed(0)}%</span>
+                        <span className={`text-5xl font-black ${results.lifetimeRoi < 0 ? 'text-rose-500' : 'text-slate-900'}`}>{results.lifetimeRoi.toFixed(0)}%</span>
                         <span className="text-xl font-bold text-slate-500">Return</span>
                     </div>
                     <p className="text-sm text-slate-400 leading-relaxed">
-                        Better than the S&P 500. A literal investment in your life.
+                        {results.lifetimeRoi > 0 
+                            ? "Better than the S&P 500. A literal investment in your life."
+                            : "Financial advice: Don't check your bank account."}
                     </p>
                 </div>
               </div>
@@ -265,17 +372,17 @@ Lifetime ROI (10yr): ${results.lifetimeRoi.toFixed(0)}%
                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="bg-slate-50 p-6 rounded-2xl">
                         <i data-lucide="tv" className="mb-4 text-slate-900"></i>
-                        <p className="text-3xl font-black mb-1">{results.comparisons.netflixSeries.toFixed(0)}</p>
+                        <p className="text-3xl font-black mb-1">{formatMetric(results.comparisons.netflixSeries)}</p>
                         <p className="text-xs font-bold uppercase text-slate-400">Netflix Series</p>
                     </div>
                     <div className="bg-slate-50 p-6 rounded-2xl">
                         <i data-lucide="car" className="mb-4 text-slate-900"></i>
-                        <p className="text-3xl font-black mb-1">{results.comparisons.carMiles.toFixed(0)}</p>
+                        <p className="text-3xl font-black mb-1">{formatMetric(results.comparisons.carMiles)}</p>
                         <p className="text-xs font-bold uppercase text-slate-400">Miles Offset</p>
                     </div>
                     <div className="bg-slate-50 p-6 rounded-2xl">
                         <i data-lucide="zap" className="mb-4 text-slate-900"></i>
-                        <p className="text-3xl font-black mb-1">{results.comparisons.bulbDays.toFixed(0)}</p>
+                        <p className="text-3xl font-black mb-1">{formatMetric(results.comparisons.bulbDays)}</p>
                         <p className="text-xs font-bold uppercase text-slate-400">Days of Light</p>
                     </div>
                  </div>
@@ -295,7 +402,7 @@ Lifetime ROI (10yr): ${results.lifetimeRoi.toFixed(0)}%
                     </div>
                 </div>
                 <div className="absolute -bottom-20 -right-20 text-slate-800 opacity-20">
-                    <i data-lucide="check-circle" size={300}></i>
+                    <i data-lucide="check-circle" className="w-[300px] h-[300px]"></i>
                 </div>
               </section>
             </div>
@@ -307,12 +414,59 @@ Lifetime ROI (10yr): ${results.lifetimeRoi.toFixed(0)}%
             className="fixed bottom-8 right-8 bg-emerald-500 text-white p-4 rounded-full shadow-2xl hover:bg-emerald-400 hover:scale-110 active:scale-95 transition-all z-50 flex items-center justify-center group"
             aria-label="Copy Summary"
           >
-            <i data-lucide="copy" size={24}></i>
+            <i data-lucide="copy" className="w-6 h-6"></i>
             <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-out group-hover:ml-2 font-bold">Copy Summary</span>
           </button>
 
         </div>
       </div>
+
+      {/* Privacy Modal */}
+      {isPrivacyOpen && (
+        <div className="fixed inset-0 z-[60] backdrop flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative animate-fade-in-up">
+                <button 
+                  onClick={() => setIsPrivacyOpen(false)}
+                  className="absolute top-4 right-4 text-slate-400 hover:text-slate-900"
+                >
+                    <i data-lucide="x" className="w-6 h-6"></i>
+                </button>
+                
+                <h2 className="text-2xl font-black tracking-tight mb-2">About Freedom ROI</h2>
+                <p className="text-slate-500 text-sm mb-6 leading-relaxed">
+                    We believe in transparency. This calculator runs entirely in your browser. No personal financial data is sent to any server.
+                </p>
+
+                <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
+                    <div className="flex items-center justify-between mb-2">
+                        <label htmlFor="analytics-toggle" className="font-bold text-slate-900">Respectful Tracking</label>
+                        
+                        <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                            <input 
+                                type="checkbox" 
+                                name="toggle" 
+                                id="analytics-toggle" 
+                                checked={analyticsEnabled}
+                                onChange={(e) => toggleAnalytics(e.target.checked)}
+                                className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-slate-300 appearance-none cursor-pointer outline-none transition-all duration-300"
+                            />
+                            <label htmlFor="analytics-toggle" className="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer transition-colors duration-300"></label>
+                        </div>
+                    </div>
+                    <p className="text-xs text-slate-500">
+                        We use cookieless, anonymized analytics only if you say so. No personal data ever leaves your device.
+                    </p>
+                </div>
+                
+                <div className="mt-6 text-center">
+                    <a href="https://buymeacoffee.com/happiefruit" target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-emerald-600 uppercase tracking-widest hover:underline">
+                        Support Development
+                    </a>
+                </div>
+            </div>
+        </div>
+      )}
+
     </div>
   );
 };

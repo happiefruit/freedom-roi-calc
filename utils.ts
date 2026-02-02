@@ -34,8 +34,6 @@ export const calculateROI = (
   
   // 1. Calculate Time ROI
   // Formula: (Mins per task * Freq per week * 52) / 60
-  // Note: For most appliances, we subtract a small amount of "maintenance time" (loading dishwasher etc), 
-  // but for the sake of the prompt's requested precision on "Commute Time", we will treat the input as pure saved time.
   const applianceMaintenanceMins = appliance.isEspressoMachine ? 2 : 5; // minimal interaction
   const netMinutesSavedPerUse = Math.max(0, inputs.timePerTask - applianceMaintenanceMins);
   
@@ -51,18 +49,12 @@ export const calculateROI = (
     // Assuming frequency here represents "Days per week I buy coffee"
     const annualCashSavings = dailySavings * inputs.frequency * 52;
     
-    annualValueSaved = annualCashSavings; // Override pure time value for the "Value" metric
-    // Reverse calculate "Virtual Hours" to keep the display consistent if users want to see "Time Equivalent"
-    // Or we just keep annualHoursSaved as the commute time saved.
-    
-    // The prompt asks for Money ROI. We will add the Cash Savings to the Time Value for total benefit?
-    // Usually ROI combines both. Let's add Time Value + Cash Savings for Total Benefit.
+    // Total Value = Time Value + Cash Savings
     const timeValue = annualHoursSaved * inputs.hourlyWage;
     annualValueSaved = timeValue + annualCashSavings;
   }
 
   // 3. Resource ROI
-  // Simplify resource calc based on frequency
   let manualWaterAnnual = 0;
   let manualEnergyAnnual = 0;
   
@@ -85,8 +77,9 @@ export const calculateROI = (
   const totalAnnualBenefit = annualValueSaved + resourceSavings;
 
   // 4. Metrics
-  const breakEvenMonths = totalAnnualBenefit > 0 ? inputs.cost / (totalAnnualBenefit / 12) : 0;
-  const lifetimeRoi = totalAnnualBenefit > 0 ? ((totalAnnualBenefit * 10) / inputs.cost) * 100 : 0;
+  // If benefit is <= 0, break even is Infinity (never), not 0.
+  const breakEvenMonths = totalAnnualBenefit > 0 ? inputs.cost / (totalAnnualBenefit / 12) : Infinity;
+  const lifetimeRoi = ((totalAnnualBenefit * 10) / inputs.cost) * 100;
 
   // Comparisons
   const netflixSeries = annualHoursSaved / 8;
