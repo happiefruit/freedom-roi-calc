@@ -1,50 +1,31 @@
 
-export interface AppliancePreset {
-  id: string;
-  name: string;
-  defaultCost: number;
-  defaultFrequency: number; // Uses per week
-  defaultTimePerTask: number; // Minutes
-  timeTaskLabel: string; // e.g., "Minutes spent driving to cafe"
-  snarkyReasons: string[];
-  // Special logic flags
-  isEspressoMachine?: boolean;
-  isHeatPump?: boolean;
-  energyKwhPerUse: number; // Kept for eco calc
-  waterLitresPerUse: number; // Kept for eco calc
+export type AppView = 'home' | 'calculator' | 'result';
+export type ApplianceType = 'dishwasher' | 'dryer' | 'robot-vacuum';
+
+export interface DishwasherData {
+    timeValue: number;          // $/hr
+    householdSize: number;      // count
+    
+    // Meal Frequencies (0-7 days/week)
+    breakfasts: number;
+    lunches: number;
+    dinners: number;
+
+    washingMethod: 'tap' | 'basin';
+    machineCost: number;        // $
+    installationType: 'diy' | 'pro';
 }
 
-export interface RegionalSettings {
-  currency: string;
-  currencySymbol: string;
-  isMetric: boolean;
-  electricityRate: number;
-  waterRate: number;
+export interface CalculationResult {
+    tenYearManualCost: number;
+    tenYearMachineCost: number;
+    netSavings10Year: number;
+    hoursSavedPerYear: number;
+    litresSavedPerYear: number;
+    breakEvenMonths: number;
+    isWorthIt: boolean;
+    isRestaurantMode: boolean;
 }
 
-export interface UserInputs {
-  cost: number;
-  hourlyWage: number;
-  frequency: number;
-  timePerTask: number;
-  cafePrice?: number;
-  cupsPerDay?: number;
-}
-
-export interface CalculationResults {
-  annualHoursSaved: number;
-  annualValueSaved: number;
-  breakEvenMonths: number;
-  lifetimeRoi: number;
-  ecoImpact: {
-    waterSaved: number;
-    energySaved: number;
-    carbonSaved: number;
-  };
-  comparisons: {
-    netflixSeries: number;
-    showers: number;
-    carMiles: number;
-    bulbDays: number;
-  };
-}
+// Union type for future extensibility
+export type CalculatorData = DishwasherData; 

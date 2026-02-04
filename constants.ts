@@ -1,82 +1,41 @@
 
-import { AppliancePreset } from './types';
+import { DishwasherData } from './types';
 
-export const APPLIANCES: AppliancePreset[] = [
-  {
-    id: 'robot-vacuum',
-    name: 'Robot Vacuum',
-    defaultCost: 500,
-    defaultFrequency: 3,
-    defaultTimePerTask: 45,
-    timeTaskLabel: 'Minutes per vacuum session',
-    energyKwhPerUse: 0.05,
-    waterLitresPerUse: 0,
-    snarkyReasons: [
-      "Because dust bunnies aren't actually pets, no matter what you name them.",
-      "Your cat deserves a noble electric chariot to ride into battle.",
-      "Spending Saturday morning pushing a plastic tube around is a cry for help."
-    ]
-  },
-  {
-    id: 'espresso-machine',
-    name: 'Auto Espresso Machine',
-    defaultCost: 800,
-    defaultFrequency: 5, // Days per week
-    defaultTimePerTask: 20,
-    timeTaskLabel: 'Mins roundtrip to cafe',
-    energyKwhPerUse: 0.1,
-    waterLitresPerUse: 0.2,
-    isEspressoMachine: true,
-    snarkyReasons: [
-      "Talking to a barista before 8 AM is a genuine social hazard.",
-      "Amortize your caffeine addiction into a tax-free lifestyle asset.",
-      "Your kitchen now smells like a Milanese plaza instead of desperation."
-    ]
-  },
-  {
-    id: 'robot-mower',
-    name: 'Robot Mower',
-    defaultCost: 1200,
-    defaultFrequency: 1,
-    defaultTimePerTask: 60,
-    timeTaskLabel: 'Minutes mowing lawn',
-    energyKwhPerUse: 0.1,
-    waterLitresPerUse: 0,
-    snarkyReasons: [
-      "Grass grows while you sleep; you should mow while you sleep too.",
-      "Never hear a neighbor complain about your lawn length again.",
-      "Saturday mornings are for brunch and mimosas, not seasonal allergies."
-    ]
-  },
-  {
-    id: 'dishwasher',
-    name: 'Dishwasher',
-    defaultCost: 600,
-    defaultFrequency: 7,
-    defaultTimePerTask: 30,
-    timeTaskLabel: 'Minutes scrubbing dishes',
-    energyKwhPerUse: 1.2,
-    waterLitresPerUse: 12,
-    snarkyReasons: [
-      "You are a human being, not a sponge.",
-      "Hand-washing dishes is a relic from 1850. Stop LARPing as a peasant.",
-      "Arguments about 'who scrubs the lasagna pan' are the leading cause of divorce."
-    ]
-  },
-  {
-    id: 'heat-pump-dryer',
-    name: 'Heat Pump Dryer',
-    defaultCost: 900,
-    defaultFrequency: 4,
-    defaultTimePerTask: 20,
-    timeTaskLabel: 'Mins hanging wet clothes',
-    energyKwhPerUse: 1.5,
-    waterLitresPerUse: 0,
-    isHeatPump: true,
-    snarkyReasons: [
-      "The indoor drying rack aesthetic is officially cancelled.",
-      "Stop paying the electric company enough to heat the entire neighborhood.",
-      "Fluffier towels, smaller bills, and you didn't have to touch a clothespin."
-    ]
-  }
-];
+// Default initial state
+export const DEFAULT_DISHWASHER_DATA: DishwasherData = {
+    timeValue: 25,
+    householdSize: 2,
+    breakfasts: 0,
+    lunches: 0,
+    dinners: 0,
+    washingMethod: 'tap',
+    machineCost: 800,
+    installationType: 'diy'
+};
+
+// Physics & Economics
+export const CONSTANTS = {
+    // Time (Minutes)
+    TIME_MANUAL_WASH_PER_LOAD: 20,
+    TIME_MACHINE_LOAD_UNLOAD: 5,
+    
+    // Water (Litres)
+    WATER_MANUAL_TAP_PER_LOAD: 100, // ~26 gallons (High)
+    WATER_MANUAL_BASIN_PER_LOAD: 40, // ~10 gallons (Efficient manual)
+    WATER_MACHINE_PER_LOAD: 13,     // ~3.5 gallons (Energy Star)
+    
+    // Costs ($ USD)
+    COST_WATER_PER_LITRE: 0.002, // Avg municipal rate
+    COST_KWH: 0.16,
+    
+    // Energy (kWh) - Mostly heating water
+    ENERGY_TO_HEAT_WATER_LITRE: 0.03, // Rough est to heat 1L by 40C
+    ENERGY_MACHINE_OPERATIONAL: 1.0,  // Motor + internal heater
+    
+    // Detergent
+    COST_DETERGENT_MANUAL: 0.05,
+    COST_DETERGENT_MACHINE: 0.25,
+
+    // Services
+    COST_INSTALLATION_PRO: 200 // Avg plumber cost
+};

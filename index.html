@@ -3,135 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Freedom ROI Calculator | The Value of Your Time</title>
+    <title>Worth It? | Home Appliance ROI</title>
     
     <!-- Meta / Open Graph -->
-    <meta name="description" content="Calculate the real ROI of buying time-saving appliances. Privacy-first, local calculation.">
-    <meta property="og:title" content="Freedom ROI Calculator">
-    <meta property="og:description" content="Is that robot vacuum an investment or a toy? Find out now.">
-    <meta property="og:image" content="https://ui-avatars.com/api/?name=ROI&background=0f172a&color=fff&size=512">
+    <meta name="description" content="Brutally honest financial advice for your home.">
+    <meta property="og:title" content="Worth It? Calculator">
+    <meta property="og:image" content="https://ui-avatars.com/api/?name=WI&background=4f46e5&color=fff&size=512">
     <meta property="og:type" content="website">
 
-    <!-- Favicon: Money with Wings -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💸</text></svg>">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤔</text></svg>">
     
     <!-- Dependencies -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-    <!-- Custom Config -->
     <style>
         :root {
-            --accent-color: #10b981; /* Default: Emerald-500 */
-            --accent-hover: #059669;
-            --gold: #D4AF37;
+            --primary: #4f46e5; /* Indigo-600 */
         }
-
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #ffffff;
+            background-color: #f8fafc; /* Slate-50 */
             color: #0f172a; /* Slate-900 */
-            overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
         }
-
-        /* --- Custom Range Slider --- */
+        /* Custom Range Slider */
         input[type=range] {
             -webkit-appearance: none; 
             background: transparent; 
         }
-        
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
             height: 24px;
             width: 24px;
             border-radius: 50%;
-            background: var(--accent-color);
-            cursor: pointer;
+            background: #fff;
+            border: 4px solid var(--primary);
+            cursor: grab;
             margin-top: -10px; 
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            transition: transform 0.1s, background-color 0.3s;
+            transition: transform 0.1s;
         }
-
-        input[type=range]::-webkit-slider-thumb:hover {
+        input[type=range]::-webkit-slider-thumb:active {
             transform: scale(1.1);
         }
-
         input[type=range]::-webkit-slider-runnable-track {
             width: 100%;
             height: 4px;
             cursor: pointer;
             border-radius: 9999px;
-            /* Gradient background is set via JS */
-        }
-
-        /* --- Toggle Switch (iOS Style) --- */
-        .toggle-checkbox:checked {
-            right: 0;
-            border-color: var(--accent-color);
-        }
-        .toggle-checkbox:checked + .toggle-label {
-            background-color: var(--accent-color);
+            background: #e2e8f0;
         }
         
-        /* --- Animations --- */
-        .slide-panel {
-            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .fade-in {
-            animation: fadeIn 0.5s ease-out forwards;
-            opacity: 0;
-        }
-        
-        .animate-fade-in-up {
-            animation: fadeInUp 0.5s ease-out forwards;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes fadeInUp {
-             from { opacity: 0; transform: translateY(20px); }
-             to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes pulse-heart {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-        }
-
-        .heartbeat {
-            animation: pulse-heart 2s infinite;
-        }
-
-        /* --- Utilities --- */
-        .text-accent { color: var(--accent-color); transition: color 0.5s; }
-        .bg-accent { background-color: var(--accent-color); transition: background-color 0.5s; }
-        .border-accent { border-color: var(--accent-color); transition: border-color 0.5s; }
-        
-        /* Modal Backdrop */
-        .backdrop {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(4px);
-        }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
+    
     <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@18.2.0?dev",
+    "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime?dev",
     "react-dom/client": "https://esm.sh/react-dom@18.2.0/client?dev",
     "react-dom": "https://esm.sh/react-dom@18.2.0?dev",
-    "react-dom/": "https://esm.sh/react-dom@^18.2.0/",
-    "react/": "https://esm.sh/react@^18.2.0/"
+    "lucide-react": "https://esm.sh/lucide-react@0.460.0?deps=react@18.2.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react/": "https://esm.sh/react@^19.2.4/"
   }
 }
 </script>
 </head>
-<body class="min-h-screen flex flex-col relative">
+<body>
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
 </body>

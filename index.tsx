@@ -1,4 +1,3 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
@@ -14,12 +13,3 @@ root.render(
     <App />
   </React.StrictMode>
 );
-
-// Initialize Lucide icons after render
-setTimeout(() => {
-    // @ts-ignore
-    if (window.lucide) {
-        // @ts-ignore
-        window.lucide.createIcons();
-    }
-}, 500);

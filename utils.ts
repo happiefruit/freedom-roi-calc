@@ -1,103 +1,94 @@
 
-import { RegionalSettings, AppliancePreset, UserInputs, CalculationResults } from './types';
+import { DishwasherData, CalculationResult } from './types';
+import { CONSTANTS } from './constants';
 
-export const getRegionalSettings = (): RegionalSettings => {
-  const locale = navigator.language || 'en-US';
-  const currency = new Intl.NumberFormat(locale, { style: 'currency', currency: 'USD' })
-    .resolvedOptions().currency || 'USD';
-  
-  const isMetric = !['US', 'LR', 'MM'].some(country => locale.includes(country));
-  
-  // Default estimates
-  let electricityRate = 0.15;
-  let waterRate = 0.002;
-  let currencySymbol = '$';
+export const calculateDishwasherROI = (data: DishwasherData): CalculationResult => {
+    const { 
+        timeValue, 
+        householdSize,
+        breakfasts,
+        lunches,
+        dinners, 
+        washingMethod, 
+        machineCost, 
+        installationType 
+    } = data;
 
-  if (currency === 'GBP') {
-    electricityRate = 0.28;
-    waterRate = 0.003;
-    currencySymbol = '£';
-  } else if (currency === 'EUR') {
-    electricityRate = 0.22;
-    waterRate = 0.0025;
-    currencySymbol = '€';
-  }
+    // 1. Annual Usage (New Pots & Pans Logic)
+    // Capacity: 15 Units per load
+    const breakfastUnits = breakfasts * (0.5 + (householdSize * 0.5));
+    const lunchUnits = lunches * (1.5 + (householdSize * 1));
+    const dinnerUnits = dinners * (3 + (householdSize * 1)); // Dinners are heavy on pots
 
-  return { currency, currencySymbol, isMetric, electricityRate, waterRate };
-};
-
-export const calculateROI = (
-  appliance: AppliancePreset,
-  inputs: UserInputs,
-  regional: RegionalSettings
-): CalculationResults => {
-  
-  // 1. Calculate Time ROI
-  // Formula: (Mins per task * Freq per week * 52) / 60
-  const applianceMaintenanceMins = appliance.isEspressoMachine ? 2 : 5; // minimal interaction
-  const netMinutesSavedPerUse = Math.max(0, inputs.timePerTask - applianceMaintenanceMins);
-  
-  let annualHoursSaved = (netMinutesSavedPerUse * inputs.frequency * 52) / 60;
-  let annualValueSaved = annualHoursSaved * inputs.hourlyWage;
-
-  // 2. Calculate Money ROI (Special Espresso Logic)
-  // Formula: ((Cafe Price - Home Cost) * Cups * Frequency * 52) - Appliance Cost
-  // Note: We add this cash savings to the 'Value Saved' metric
-  if (appliance.isEspressoMachine && inputs.cafePrice && inputs.cupsPerDay) {
-    const homeCost = 0.50; // Fixed per prompt
-    const dailySavings = (inputs.cafePrice - homeCost) * inputs.cupsPerDay;
-    // Assuming frequency here represents "Days per week I buy coffee"
-    const annualCashSavings = dailySavings * inputs.frequency * 52;
+    const totalWeeklyUnits = breakfastUnits + lunchUnits + dinnerUnits;
     
-    // Total Value = Time Value + Cash Savings
-    const timeValue = annualHoursSaved * inputs.hourlyWage;
-    annualValueSaved = timeValue + annualCashSavings;
-  }
+    // Calculate raw loads, ensuring at least 0.5 loads/week if they selected any cooking,
+    // otherwise 0 if they literally never cook (which is rare, but formula handles 0).
+    let loadsPerWeek = totalWeeklyUnits / 15;
+    if (loadsPerWeek > 0 && loadsPerWeek < 0.5) {
+        loadsPerWeek = 0.5;
+    }
 
-  // 3. Resource ROI
-  let manualWaterAnnual = 0;
-  let manualEnergyAnnual = 0;
-  
-  if (appliance.id === 'dishwasher') {
-    manualWaterAnnual = 80 * inputs.frequency * 52; // Hand wash
-    manualEnergyAnnual = 2.0 * inputs.frequency * 52; // Hot water heating
-  } else if (appliance.isHeatPump) {
-    manualEnergyAnnual = appliance.energyKwhPerUse * 2.5 * inputs.frequency * 52; // Vented dryer
-  }
+    const loadsPerYear = loadsPerWeek * 52;
 
-  const applianceWaterAnnual = appliance.waterLitresPerUse * inputs.frequency * 52;
-  const applianceEnergyAnnual = appliance.energyKwhPerUse * inputs.frequency * 52;
+    // 2. Manual Washing Costs (Annual)
+    const manualTimeHours = (loadsPerYear * CONSTANTS.TIME_MANUAL_WASH_PER_LOAD) / 60;
+    const manualWaterLitres = loadsPerYear * (washingMethod === 'tap' ? CONSTANTS.WATER_MANUAL_TAP_PER_LOAD : CONSTANTS.WATER_MANUAL_BASIN_PER_LOAD);
+    const manualEnergyKwh = manualWaterLitres * CONSTANTS.ENERGY_TO_HEAT_WATER_LITRE; // Heating the water
+    
+    const costManualTime = manualTimeHours * timeValue;
+    const costManualWater = manualWaterLitres * CONSTANTS.COST_WATER_PER_LITRE;
+    const costManualEnergy = manualEnergyKwh * CONSTANTS.COST_KWH;
+    const costManualSoap = loadsPerYear * CONSTANTS.COST_DETERGENT_MANUAL;
 
-  const waterSaved = Math.max(0, manualWaterAnnual - applianceWaterAnnual);
-  const energySaved = Math.max(0, manualEnergyAnnual - applianceEnergyAnnual);
+    const annualManualCost = costManualTime + costManualWater + costManualEnergy + costManualSoap;
 
-  const resourceSavings = (waterSaved * regional.waterRate) + (energySaved * regional.electricityRate);
-  
-  // Total Annual Benefit
-  const totalAnnualBenefit = annualValueSaved + resourceSavings;
+    // 3. Machine Washing Costs (Annual)
+    const machineTimeHours = (loadsPerYear * CONSTANTS.TIME_MACHINE_LOAD_UNLOAD) / 60;
+    const machineWaterLitres = loadsPerYear * CONSTANTS.WATER_MACHINE_PER_LOAD;
+    const machineEnergyKwh = (loadsPerYear * CONSTANTS.ENERGY_MACHINE_OPERATIONAL); // Includes heating
+    
+    const costMachineTime = machineTimeHours * timeValue;
+    const costMachineWater = machineWaterLitres * CONSTANTS.COST_WATER_PER_LITRE;
+    const costMachineEnergy = machineEnergyKwh * CONSTANTS.COST_KWH;
+    const costMachineSoap = loadsPerYear * CONSTANTS.COST_DETERGENT_MACHINE;
 
-  // 4. Metrics
-  // If benefit is <= 0, break even is Infinity (never), not 0.
-  const breakEvenMonths = totalAnnualBenefit > 0 ? inputs.cost / (totalAnnualBenefit / 12) : Infinity;
-  const lifetimeRoi = ((totalAnnualBenefit * 10) / inputs.cost) * 100;
+    const annualMachineOpCost = costMachineTime + costMachineWater + costMachineEnergy + costMachineSoap;
 
-  // Comparisons
-  const netflixSeries = annualHoursSaved / 8;
-  const showers = waterSaved / (regional.isMetric ? 60 : 17);
-  const carbonSaved = energySaved * 0.4;
-  const carMiles = carbonSaved * 2.5;
-  const bulbDays = (energySaved / 0.01) / 24;
+    // 4. Investment
+    const upfrontCost = machineCost + (installationType === 'pro' ? CONSTANTS.COST_INSTALLATION_PRO : 0);
 
-  return {
-    annualHoursSaved,
-    annualValueSaved: totalAnnualBenefit,
-    breakEvenMonths,
-    lifetimeRoi,
-    ecoImpact: { waterSaved, energySaved, carbonSaved },
-    comparisons: { netflixSeries, showers, carMiles, bulbDays }
-  };
+    // 5. Ten Year Projection
+    const tenYearManualCost = annualManualCost * 10;
+    const tenYearMachineCost = upfrontCost + (annualMachineOpCost * 10);
+    const netSavings10Year = tenYearManualCost - tenYearMachineCost;
+
+    // 6. Savings Metrics
+    const hoursSavedPerYear = manualTimeHours - machineTimeHours;
+    const litresSavedPerYear = manualWaterLitres - machineWaterLitres;
+    
+    const totalAnnualBenefit = annualManualCost - annualMachineOpCost;
+    const breakEvenMonths = totalAnnualBenefit > 0 ? (upfrontCost / totalAnnualBenefit) * 12 : 999;
+
+    // Roast Logic: If they are cooking > 5 dinners a week or generating massive load volume
+    const isRestaurantMode = dinners >= 6 || loadsPerWeek > 10;
+
+    return {
+        tenYearManualCost,
+        tenYearMachineCost,
+        netSavings10Year,
+        hoursSavedPerYear,
+        litresSavedPerYear,
+        breakEvenMonths,
+        isWorthIt: netSavings10Year > 0,
+        isRestaurantMode
+    };
 };
 
-export const formatCurrency = (val: number, symbol: string) => {
-  return `${symbol}${val.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+export const formatMoney = (val: number) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
+};
+
+export const formatNumber = (val: number) => {
+    return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(val);
 };
