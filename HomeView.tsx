@@ -25,7 +25,10 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelect }) => {
                 
                 {/* Dishwasher (Active) */}
                 <button 
-                    onClick={() => onSelect('dishwasher')}
+                    onClick={() => {
+                        if ((window as any).umami) (window as any).umami.track('start_dishwasher_calculator');
+                        onSelect('dishwasher');
+                    }}
                     className="group relative bg-white rounded-3xl p-8 text-left shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                 >
                     <div className="mb-6 inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">

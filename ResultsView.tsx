@@ -430,7 +430,10 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
                 {/* Show Math Trigger */}
                 <div className="mt-6 flex justify-end">
                     <button 
-                         onClick={() => setIsModalOpen(true)}
+                         onClick={() => {
+                             if ((window as any).umami) (window as any).umami.track('open_boring_math_modal');
+                             setIsModalOpen(true);
+                         }}
                          className="text-indigo-600 hover:text-indigo-800 text-sm font-bold flex items-center gap-2 transition-colors"
                     >
                         <Calculator size={16} />
@@ -442,7 +445,10 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
             {/* Action */}
             <div className="text-center">
                 <button 
-                    onClick={onReset}
+                    onClick={() => {
+                        if ((window as any).umami) (window as any).umami.track('reset_calculator');
+                        onReset();
+                    }}
                     className="inline-flex items-center gap-2 text-slate-400 hover:text-indigo-600 font-bold transition-colors"
                 >
                     <RotateCcw size={18} />

@@ -208,7 +208,15 @@ export const DishwasherCalculator: React.FC<Props> = ({ data, onChange, onCalcul
             {/* Sticky Footer */}
             <div className="fixed bottom-0 left-0 w-full p-4 bg-white/80 backdrop-blur-md border-t border-slate-200 flex justify-center z-50">
                 <button 
-                    onClick={onCalculate}
+                    onClick={() => {
+                        if ((window as any).umami) {
+                            (window as any).umami.track('calculate_truth_clicked', {
+                                hourly_rate: data.timeValue,
+                                household_size: data.householdSize
+                            });
+                        }
+                        onCalculate();
+                    }}
                     className="w-full max-w-lg bg-indigo-600 hover:bg-indigo-700 text-white text-lg font-bold py-4 rounded-2xl shadow-xl shadow-indigo-200 active:scale-95 transition-all"
                 >
                     Calculate Truth
