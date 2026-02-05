@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { CalculationResult, DishwasherData } from './types';
 import { formatMoney, formatNumber } from './utils';
 import { 
@@ -199,6 +200,18 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
         });
 
     }, [result, verdictTier]); 
+
+    // Lock Body Scroll when Modal is open
+    useEffect(() => {
+        if (isModalOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isModalOpen]);
 
     if (!content) return <div className="p-20 text-center text-slate-400 font-medium animate-pulse">Calculating life choices...</div>;
 
@@ -427,8 +440,8 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
                 </button>
             </div>
 
-            {/* Math Modal */}
-            {isModalOpen && (
+            {/* Math Modal - Portal used to escape the parent transform (fade-in) */}
+            {isModalOpen && createPortal(
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div 
                         className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" 
@@ -499,7 +512,8 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
 
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
         </div>
