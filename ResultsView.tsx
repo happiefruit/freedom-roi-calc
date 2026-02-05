@@ -171,6 +171,9 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
         return data;
     }, [result]);
 
+    // Debugging: Sanity check for data
+    console.log("Chart Data Generated:", chartData);
+
     useEffect(() => {
         let selectedHeadline, selectedSubhead;
 
@@ -292,7 +295,8 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
             {result.isWorthIt && result.breakEvenMonths < 120 && (
                 <div className="bg-white p-6 rounded-3xl border border-slate-200 mb-8 fade-in">
                     <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">Investment Payback Period (5 Years)</h3>
-                    <div className="h-48 w-full">
+                    {/* Hardcoded height to fix Recharts invisible container issue */}
+                    <div className="w-full h-64 mt-4">
                         {isMounted ? (
                             <ResponsiveContainer width="100%" height="100%">
                                 <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
