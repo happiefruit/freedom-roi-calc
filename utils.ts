@@ -81,7 +81,11 @@ export const calculateDishwasherROI = (data: DishwasherData): CalculationResult 
         litresSavedPerYear,
         breakEvenMonths,
         isWorthIt: netSavings10Year > 0,
-        isRestaurantMode
+        isRestaurantMode,
+        // Chart Data Support
+        upfrontCost,
+        annualManualCost,
+        annualMachineOpCost
     };
 };
 

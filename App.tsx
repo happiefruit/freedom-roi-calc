@@ -8,6 +8,7 @@ import { calculateDishwasherROI } from './utils';
 import { HomeView } from './HomeView';
 import { DishwasherCalculator } from './DishwasherCalculator';
 import { ResultsView } from './ResultsView';
+import { Footer } from './Footer';
 
 const App: React.FC = () => {
     // --- State Machine ---
@@ -45,7 +46,7 @@ const App: React.FC = () => {
 
     // --- Render Flow ---
     return (
-        <div className="min-h-screen bg-slate-50 font-sans selection:bg-indigo-100 selection:text-indigo-700">
+        <div className="min-h-screen bg-slate-50 font-sans selection:bg-indigo-100 selection:text-indigo-700 flex flex-col">
             
             {/* Nav (Minimal) */}
             <nav className="p-6 flex justify-center">
@@ -54,7 +55,7 @@ const App: React.FC = () => {
                 </div>
             </nav>
 
-            <main className="flex-1">
+            <main className="flex-1 w-full">
                 {view === 'home' && (
                     <HomeView onSelect={handleSelectAppliance} />
                 )}
@@ -76,6 +77,8 @@ const App: React.FC = () => {
                     />
                 )}
             </main>
+
+            <Footer />
         </div>
     );
 };

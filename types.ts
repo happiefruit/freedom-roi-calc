@@ -25,7 +25,12 @@ export interface CalculationResult {
     breakEvenMonths: number;
     isWorthIt: boolean;
     isRestaurantMode: boolean;
+    
+    // Cost Breakdown for Charts
+    upfrontCost: number;
+    annualManualCost: number;
+    annualMachineOpCost: number;
 }
 
 // Union type for future extensibility
-export type CalculatorData = DishwasherData; 
+export type CalculatorData = DishwasherData;

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { CalculationResult, DishwasherData } from './types';
 import { formatMoney, formatNumber } from './utils';
 import { 
@@ -17,6 +17,17 @@ import {
     Calculator,
     X
 } from 'lucide-react';
+import {
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    Tooltip,
+    ResponsiveContainer,
+    ReferenceDot,
+    Label,
+    Legend
+} from 'recharts';
 
 interface Props {
     result: CalculationResult;
@@ -82,9 +93,9 @@ const FUN_TIME_UNITS = [
         bg: "bg-indigo-50"
     },
     {
-        label: "New Skills",
-        ratio: 20,
-        text: (v: string) => `You could have learned ${v}% of a new language.`,
+        label: "Books Read",
+        ratio: 10,
+        text: (v: string) => `${v} books read cover-to-cover.`,
         icon: BookOpen,
         color: "text-emerald-500",
         bg: "bg-emerald-50"
@@ -95,7 +106,7 @@ const FUN_WATER_UNITS = [
     {
         label: "Bathtubs",
         ratio: 150,
-        text: (v: string) => `Enough water to fill ${v} bathtubs.`,
+        text: (v: string) => `Enough water to fill ${v} bathtubs (over 10 years).`,
         icon: Bath,
         color: "text-blue-500",
         bg: "bg-blue-50"
@@ -103,7 +114,7 @@ const FUN_WATER_UNITS = [
     {
         label: "Wine Bottles",
         ratio: 0.75,
-        text: (v: string) => `${v} bottles of wine (don't drink the dishwater).`,
+        text: (v: string) => `${v} bottles of wine (over 10 years).`,
         icon: Wine,
         color: "text-purple-500",
         bg: "bg-purple-50"
@@ -124,23 +135,54 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
     const [content, setContent] = useState<any>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    // Determine Verdict Tier
+    const verdictTier = useMemo(() => {
+        // If not strictly worth it math-wise OR payback is > 5 years (60 months)
+        if (!result.isWorthIt || result.breakEvenMonths >= 60) return 'low';
+        // If payback is between 2 and 5 years
+        if (result.breakEvenMonths > 24) return 'borderline';
+        // If payback is <= 2 years
+        return 'high';
+    }, [result]);
+
+    // Chart Data Construction
+    const chartData = useMemo(() => {
+        // We show the chart if net savings are positive, even if verdict is 'low' (slow payback),
+        // so users can see the slow crossover.
+        if (!result.isWorthIt) return [];
+        const data = [];
+        const manualMonthly = result.annualManualCost / 12;
+        const machineMonthly = result.annualMachineOpCost / 12;
+
+        for (let m = 0; m <= 60; m += 6) { // Every 6 months for 5 years
+            data.push({
+                month: m,
+                manual: manualMonthly * m,
+                machine: result.upfrontCost + (machineMonthly * m)
+            });
+        }
+        return data;
+    }, [result]);
+
     useEffect(() => {
-        // Randomization Logic
-        const isHigh = result.isWorthIt;
-        
-        // 1. Headlines
-        const headlines = isHigh ? HEADLINES.high : HEADLINES.low;
-        const selectedHeadline = headlines[Math.floor(Math.random() * headlines.length)];
+        let selectedHeadline, selectedSubhead;
 
-        // 2. Subheads
-        const subheads = isHigh ? SUBHEADS.high : SUBHEADS.low;
-        const subheadFn = subheads[Math.floor(Math.random() * subheads.length)];
-        const selectedSubhead = subheadFn(formatNumber(result.hoursSavedPerYear));
+        if (verdictTier === 'borderline') {
+            selectedHeadline = "It's a Luxury, Not a Savings Plan.";
+            const years = Math.ceil(result.breakEvenMonths / 12);
+            selectedSubhead = `You will eventually break even in Year ${years}, but this is mostly about convenience, not cash. You're paying for comfort. If you plan to stay in this home for 5+ years, it pays off. If you're renting, stick to hand washing.`;
+        } else {
+            // Randomization Logic for High/Low
+            const headlines = verdictTier === 'high' ? HEADLINES.high : HEADLINES.low;
+            selectedHeadline = headlines[Math.floor(Math.random() * headlines.length)];
 
-        // 3. Fun Time
+            const subheads = verdictTier === 'high' ? SUBHEADS.high : SUBHEADS.low;
+            const subheadFn = subheads[Math.floor(Math.random() * subheads.length)];
+            selectedSubhead = subheadFn(formatNumber(result.hoursSavedPerYear));
+        }
+
+        // Fun Units (Random selection)
         const randomTime = FUN_TIME_UNITS[Math.floor(Math.random() * FUN_TIME_UNITS.length)];
-        
-        // 4. Fun Water
         const randomWater = FUN_WATER_UNITS[Math.floor(Math.random() * FUN_WATER_UNITS.length)];
 
         setContent({
@@ -152,22 +194,27 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
             },
             waterUnit: {
                 ...randomWater,
-                val: Math.max(0, result.litresSavedPerYear) / randomWater.ratio
+                val: Math.max(0, result.litresSavedPerYear * 10) / randomWater.ratio
             }
         });
 
-    }, [result]); 
+    }, [result, verdictTier]); 
 
     if (!content) return <div className="p-20 text-center text-slate-400 font-medium animate-pulse">Calculating life choices...</div>;
+
+    // Badge Styles
+    const getBadgeStyle = () => {
+        if (verdictTier === 'high') return 'bg-indigo-100 text-indigo-700';
+        if (verdictTier === 'borderline') return 'bg-amber-100 text-amber-800';
+        return 'bg-orange-100 text-orange-800';
+    };
 
     return (
         <div className="w-full max-w-2xl mx-auto px-4 py-12 fade-in">
             
             {/* Verdict Header */}
             <div className="text-center mb-10">
-                <div className={`inline-flex items-center gap-2 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest mb-6 ${
-                    result.isWorthIt ? 'bg-indigo-100 text-indigo-700' : 'bg-orange-100 text-orange-800'
-                }`}>
+                <div className={`inline-flex items-center gap-2 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest mb-6 ${getBadgeStyle()}`}>
                     Verdict
                 </div>
                 <h1 className="text-5xl md:text-6xl font-black tracking-tighter text-slate-900 mb-6 leading-tight">
@@ -207,20 +254,81 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
                 </div>
 
                 {/* Machine */}
-                <div className={`p-6 rounded-3xl border relative overflow-hidden ${result.isWorthIt ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white border-slate-200'}`}>
+                <div className={`p-6 rounded-3xl border relative overflow-hidden ${verdictTier !== 'low' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white border-slate-200'}`}>
                     <div className="relative z-10">
-                        <h3 className={`text-xs font-bold uppercase tracking-widest mb-1 ${result.isWorthIt ? 'text-indigo-200' : 'text-slate-400'}`}>
+                        <h3 className={`text-xs font-bold uppercase tracking-widest mb-1 ${verdictTier !== 'low' ? 'text-indigo-200' : 'text-slate-400'}`}>
                             Dishwasher
                         </h3>
-                        <div className={`text-3xl font-black mb-1 ${result.isWorthIt ? 'text-white' : 'text-slate-900'}`}>
+                        <div className={`text-3xl font-black mb-1 ${verdictTier !== 'low' ? 'text-white' : 'text-slate-900'}`}>
                             {formatMoney(result.tenYearMachineCost)}
                         </div>
-                        <p className={`text-xs ${result.isWorthIt ? 'text-indigo-200' : 'text-slate-400'}`}>
+                        <p className={`text-xs ${verdictTier !== 'low' ? 'text-indigo-200' : 'text-slate-400'}`}>
                             10-Year Cost (Machine + Utilities)
                         </p>
                     </div>
                 </div>
             </div>
+
+            {/* Break-Even Chart */}
+            {result.isWorthIt && result.breakEvenMonths < 120 && (
+                <div className="bg-white p-6 rounded-3xl border border-slate-200 mb-8 fade-in">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">Investment Payback Period (5 Years)</h3>
+                    <div className="h-48 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
+                                <XAxis 
+                                    dataKey="month" 
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fontSize: 10, fill: '#94a3b8' }}
+                                    tickFormatter={(val) => val > 0 && val % 12 === 0 ? `Year ${val/12}` : ''}
+                                />
+                                <YAxis hide domain={['auto', 'auto']} />
+                                <Tooltip 
+                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                    itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                                    formatter={(value: number) => [`$${Math.round(value)}`, '']}
+                                    labelFormatter={(label) => `Month ${label}`}
+                                />
+                                <Legend verticalAlign="top" height={36} />
+                                <Line 
+                                    type="monotone" 
+                                    dataKey="manual" 
+                                    stroke="#f87171" 
+                                    strokeWidth={3} 
+                                    dot={false} 
+                                    name="Hand Washing (Cumulative)"
+                                />
+                                <Line 
+                                    type="monotone" 
+                                    dataKey="machine" 
+                                    stroke="#10b981" 
+                                    strokeWidth={3} 
+                                    dot={false} 
+                                    name="Dishwasher (Cumulative)"
+                                />
+                                {result.breakEvenMonths <= 60 && (
+                                     <ReferenceDot 
+                                        x={result.breakEvenMonths} 
+                                        y={(result.annualManualCost/12) * result.breakEvenMonths} 
+                                        r={6} 
+                                        fill="#4f46e5" 
+                                        stroke="#fff"
+                                        strokeWidth={2}
+                                    >
+                                        <Label 
+                                            value={`Break Even: Month ${Math.round(result.breakEvenMonths)}`} 
+                                            position="top" 
+                                            offset={10}
+                                            style={{ fill: '#4f46e5', fontSize: 12, fontWeight: 'bold' }}
+                                        />
+                                    </ReferenceDot>
+                                )}
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            )}
 
             {/* Fun Units Grid */}
             <h3 className="text-sm font-bold text-slate-900 mb-4 px-2">What you could have done instead</h3>
