@@ -1,15 +1,16 @@
 
-import React, { useState } from 'react';
-import { X, ExternalLink, Coffee, FileText, Info, Shield, Heart } from 'lucide-react';
+import React from 'react';
+import { X, Coffee, Info, Shield, Heart } from 'lucide-react';
 
 interface Props {
     isOpen: boolean;
     onClose: () => void;
+    analyticsAllowed: boolean;
+    setAnalyticsAllowed: (allowed: boolean) => void;
 }
 
-export const AboutModal: React.FC<Props> = ({ isOpen, onClose }) => {
-    const [allowAnalytics, setAllowAnalytics] = useState(true);
-
+export const AboutModal: React.FC<Props> = ({ isOpen, onClose, analyticsAllowed, setAnalyticsAllowed }) => {
+    
     if (!isOpen) return null;
 
     return (
@@ -92,10 +93,10 @@ export const AboutModal: React.FC<Props> = ({ isOpen, onClose }) => {
                                 Your Data
                              </h4>
                              <button 
-                                onClick={() => setAllowAnalytics(!allowAnalytics)}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${allowAnalytics ? 'bg-indigo-600' : 'bg-slate-200'}`}
+                                onClick={() => setAnalyticsAllowed(!analyticsAllowed)}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${analyticsAllowed ? 'bg-indigo-600' : 'bg-slate-200'}`}
                              >
-                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${allowAnalytics ? 'translate-x-6' : 'translate-x-1'}`} />
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${analyticsAllowed ? 'translate-x-6' : 'translate-x-1'}`} />
                              </button>
                         </div>
                         <div className="flex justify-between items-center">

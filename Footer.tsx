@@ -2,7 +2,12 @@
 import React, { useState } from 'react';
 import { AboutModal } from './AboutModal';
 
-export const Footer: React.FC = () => {
+interface FooterProps {
+    analyticsAllowed: boolean;
+    setAnalyticsAllowed: (allowed: boolean) => void;
+}
+
+export const Footer: React.FC<FooterProps> = ({ analyticsAllowed, setAnalyticsAllowed }) => {
     const [isAboutOpen, setIsAboutOpen] = useState(false);
 
     return (
@@ -35,7 +40,12 @@ export const Footer: React.FC = () => {
                 </div>
             </footer>
             
-            <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
+            <AboutModal 
+                isOpen={isAboutOpen} 
+                onClose={() => setIsAboutOpen(false)} 
+                analyticsAllowed={analyticsAllowed}
+                setAnalyticsAllowed={setAnalyticsAllowed}
+            />
         </>
     );
 };

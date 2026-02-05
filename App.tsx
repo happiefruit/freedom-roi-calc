@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { AppView, ApplianceType, DishwasherData } from './types';
 import { DEFAULT_DISHWASHER_DATA } from './constants';
 import { calculateDishwasherROI } from './utils';
@@ -17,6 +17,39 @@ const App: React.FC = () => {
     
     // Data Store
     const [dishwasherData, setDishwasherData] = useState<DishwasherData>(DEFAULT_DISHWASHER_DATA);
+
+    // --- Analytics Consent ---
+    const [analyticsAllowed, setAnalyticsAllowed] = useState(() => {
+        const saved = localStorage.getItem('analytics_consent');
+        return saved !== null ? JSON.parse(saved) : true; // Default to true
+    });
+
+    useEffect(() => {
+        const scriptId = 'umami-script';
+        
+        if (analyticsAllowed) {
+            // 1. If allowed & not present, inject it
+            if (!document.getElementById(scriptId)) {
+                const script = document.createElement('script');
+                script.id = scriptId;
+                script.async = true;
+                script.defer = true;
+                script.src = "https://cloud.umami.is/script.js";
+                script.setAttribute("data-website-id", "994431b0-6042-45c1-a979-2b03e162b240");
+                document.head.appendChild(script);
+            }
+        } else {
+            // 2. If blocked & present, remove it
+            const existingScript = document.getElementById(scriptId);
+            if (existingScript) {
+                document.head.removeChild(existingScript);
+            }
+        }
+        
+        // 3. Save preference
+        localStorage.setItem('analytics_consent', JSON.stringify(analyticsAllowed));
+
+    }, [analyticsAllowed]);
 
     // --- Actions ---
     const handleSelectAppliance = (type: ApplianceType) => {
@@ -78,7 +111,7 @@ const App: React.FC = () => {
                 )}
             </main>
 
-            <Footer />
+            <Footer analyticsAllowed={analyticsAllowed} setAnalyticsAllowed={setAnalyticsAllowed} />
         </div>
     );
 };
