@@ -24,7 +24,6 @@ import {
     XAxis,
     YAxis,
     Tooltip,
-    ResponsiveContainer,
     ReferenceDot,
     Label,
     Legend
@@ -135,7 +134,7 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
     // State for dynamic content
     const [content, setContent] = useState<any>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    // Fix for Recharts ResponsiveContainer hydration mismatch
+    // Fix for Recharts hydration mismatch
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
@@ -295,63 +294,66 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
             {result.isWorthIt && result.breakEvenMonths < 120 && (
                 <div className="bg-white p-6 rounded-3xl border border-slate-200 mb-8 fade-in">
                     <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">Investment Payback Period (5 Years)</h3>
-                    {/* Hardcoded height to fix Recharts invisible container issue */}
-                    <div style={{ width: '100%', height: 300 }} className="mt-4">
+                    {/* Fixed dimensions to avoid ResponsiveContainer issues */}
+                    <div className="flex justify-center overflow-x-auto mt-4">
                         {isMounted ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
-                                    <XAxis 
-                                        dataKey="month" 
-                                        axisLine={false}
-                                        tickLine={false}
-                                        tick={{ fontSize: 10, fill: '#94a3b8' }}
-                                        tickFormatter={(val) => val > 0 && val % 12 === 0 ? `Year ${val/12}` : ''}
-                                    />
-                                    <YAxis hide domain={['auto', 'auto']} />
-                                    <Tooltip 
-                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                        itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-                                        formatter={(value: number) => [`$${Math.round(value)}`, '']}
-                                        labelFormatter={(label) => `Month ${label}`}
-                                    />
-                                    <Legend verticalAlign="top" height={36} />
-                                    <Line 
-                                        type="monotone" 
-                                        dataKey="manual" 
-                                        stroke="#f87171" 
-                                        strokeWidth={3} 
-                                        dot={false} 
-                                        name="Hand Washing (Cumulative)"
-                                    />
-                                    <Line 
-                                        type="monotone" 
-                                        dataKey="machine" 
-                                        stroke="#10b981" 
-                                        strokeWidth={3} 
-                                        dot={false} 
-                                        name="Dishwasher (Cumulative)"
-                                    />
-                                    {result.breakEvenMonths <= 60 && (
-                                         <ReferenceDot 
-                                            x={result.breakEvenMonths} 
-                                            y={(result.annualManualCost/12) * result.breakEvenMonths} 
-                                            r={6} 
-                                            fill="#4f46e5" 
-                                            stroke="#fff"
-                                            strokeWidth={2}
-                                        >
-                                            <Label 
-                                                value={`Break Even: Month ${Math.round(result.breakEvenMonths)}`} 
-                                                position="top" 
-                                                offset={10}
-                                                style={{ fill: '#4f46e5', fontSize: 12, fontWeight: 'bold' }}
-                                            />
-                                        </ReferenceDot>
-                                    )}
-                                </LineChart>
-                            </ResponsiveContainer>
+                            <LineChart 
+                                width={500} 
+                                height={300} 
+                                data={chartData} 
+                                margin={{ top: 10, right: 30, left: 10, bottom: 0 }}
+                            >
+                                <XAxis 
+                                    dataKey="month" 
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fontSize: 10, fill: '#94a3b8' }}
+                                    tickFormatter={(val) => val > 0 && val % 12 === 0 ? `Year ${val/12}` : ''}
+                                />
+                                <YAxis hide domain={['auto', 'auto']} />
+                                <Tooltip 
+                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                    itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                                    formatter={(value: number) => [`$${Math.round(value)}`, '']}
+                                    labelFormatter={(label) => `Month ${label}`}
+                                />
+                                <Legend verticalAlign="top" height={36} />
+                                <Line 
+                                    type="monotone" 
+                                    dataKey="manual" 
+                                    stroke="#f87171" 
+                                    strokeWidth={3} 
+                                    dot={false} 
+                                    name="Hand Washing (Cumulative)"
+                                />
+                                <Line 
+                                    type="monotone" 
+                                    dataKey="machine" 
+                                    stroke="#10b981" 
+                                    strokeWidth={3} 
+                                    dot={false} 
+                                    name="Dishwasher (Cumulative)"
+                                />
+                                {result.breakEvenMonths <= 60 && (
+                                     <ReferenceDot 
+                                        x={result.breakEvenMonths} 
+                                        y={(result.annualManualCost/12) * result.breakEvenMonths} 
+                                        r={6} 
+                                        fill="#4f46e5" 
+                                        stroke="#fff"
+                                        strokeWidth={2}
+                                    >
+                                        <Label 
+                                            value={`Break Even: Month ${Math.round(result.breakEvenMonths)}`} 
+                                            position="top" 
+                                            offset={10}
+                                            style={{ fill: '#4f46e5', fontSize: 12, fontWeight: 'bold' }}
+                                        />
+                                    </ReferenceDot>
+                                )}
+                            </LineChart>
                         ) : (
-                            <div className="h-full w-full bg-slate-50 animate-pulse rounded-lg" />
+                            <div className="h-[300px] w-full bg-slate-50 animate-pulse rounded-lg" />
                         )}
                     </div>
                 </div>
