@@ -85,7 +85,8 @@ export const calculateDishwasherROI = (data: DishwasherData): CalculationResult 
         // Chart Data Support
         upfrontCost,
         annualManualCost,
-        annualMachineOpCost
+        annualMachineOpCost,
+        loadsPerWeek
     };
 };
 

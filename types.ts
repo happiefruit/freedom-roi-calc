@@ -30,6 +30,7 @@ export interface CalculationResult {
     upfrontCost: number;
     annualManualCost: number;
     annualMachineOpCost: number;
+    loadsPerWeek: number;
 }
 
 // Union type for future extensibility
