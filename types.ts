@@ -31,6 +31,14 @@ export interface CalculationResult {
     annualManualCost: number;
     annualMachineOpCost: number;
     loadsPerWeek: number;
+    
+    // Transparency Data
+    itemBreakdown: {
+        weeklyBreakfastItems: number;
+        weeklyLunchItems: number;
+        weeklyDinnerItems: number;
+        totalWeeklyItems: number;
+    };
 }
 
 // Union type for future extensibility

@@ -14,18 +14,20 @@ export const calculateDishwasherROI = (data: DishwasherData): CalculationResult 
         installationType 
     } = data;
 
-    // 1. Annual Usage (New Pots & Pans Logic)
-    // Capacity: 15 Units per load
-    const breakfastUnits = breakfasts * (0.5 + (householdSize * 0.5));
-    const lunchUnits = lunches * (1.5 + (householdSize * 1));
-    const dinnerUnits = dinners * (3 + (householdSize * 1)); // Dinners are heavy on pots
-
-    const totalWeeklyUnits = breakfastUnits + lunchUnits + dinnerUnits;
+    // 1. Annual Usage (Transparent Item Count Logic)
+    // We calculate total dirty items generated per week based on meal frequency and household size.
     
-    // Calculate raw loads, ensuring at least 0.5 loads/week if they selected any cooking,
-    // otherwise 0 if they literally never cook (which is rare, but formula handles 0).
-    let loadsPerWeek = totalWeeklyUnits / 15;
-    if (loadsPerWeek > 0 && loadsPerWeek < 0.5) {
+    const weeklyBreakfastItems = breakfasts * householdSize * CONSTANTS.ITEMS_PER_BREAKFAST;
+    const weeklyLunchItems = lunches * householdSize * CONSTANTS.ITEMS_PER_LUNCH;
+    const weeklyDinnerItems = dinners * householdSize * CONSTANTS.ITEMS_PER_DINNER;
+
+    const totalWeeklyItems = weeklyBreakfastItems + weeklyLunchItems + weeklyDinnerItems;
+    
+    // Calculate raw loads based on capacity
+    let loadsPerWeek = totalWeeklyItems / CONSTANTS.DISHWASHER_CAPACITY;
+    
+    // Floor logic: If they cook at all, assume at least 0.5 loads/week (smell factor/batching)
+    if (totalWeeklyItems > 0 && loadsPerWeek < 0.5) {
         loadsPerWeek = 0.5;
     }
 
@@ -86,7 +88,14 @@ export const calculateDishwasherROI = (data: DishwasherData): CalculationResult 
         upfrontCost,
         annualManualCost,
         annualMachineOpCost,
-        loadsPerWeek
+        loadsPerWeek,
+        // Transparency
+        itemBreakdown: {
+            weeklyBreakfastItems,
+            weeklyLunchItems,
+            weeklyDinnerItems,
+            totalWeeklyItems
+        }
     };
 };
 

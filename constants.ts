@@ -37,5 +37,13 @@ export const CONSTANTS = {
     COST_DETERGENT_MACHINE: 0.25,
 
     // Services
-    COST_INSTALLATION_PRO: 200 // Avg plumber cost
+    COST_INSTALLATION_PRO: 200, // Avg plumber cost
+
+    // Transparency: Mess Coefficients (Items per person per meal)
+    ITEMS_PER_BREAKFAST: 2, // Bowl, Spoon
+    ITEMS_PER_LUNCH: 3,     // Plate, Fork, Glass
+    ITEMS_PER_DINNER: 6,    // Plate, Cutlery, Glass, Pot/Pan share (aggregated)
+    
+    // Machine Capacity (Total individual items standard load)
+    DISHWASHER_CAPACITY: 45
 };

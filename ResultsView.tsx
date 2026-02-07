@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { CalculationResult, DishwasherData } from './types';
 import { formatMoney, formatNumber } from './utils';
 import { PaybackTimeline } from './PaybackTimeline';
+import { CONSTANTS } from './constants';
 import { 
     RotateCcw, 
     TrendingUp, 
@@ -17,7 +18,10 @@ import {
     Wine,
     Waves,
     Calculator,
-    X
+    X,
+    Info,
+    Utensils,
+    Share
 } from 'lucide-react';
 
 interface Props {
@@ -125,6 +129,7 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
     // State for dynamic content
     const [content, setContent] = useState<any>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [showTooltip, setShowTooltip] = useState(false);
 
     // Determine Verdict Tier
     const verdictTier = useMemo(() => {
@@ -184,6 +189,33 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
         };
     }, [isModalOpen]);
 
+    const handleShare = async () => {
+        const years = (result.breakEvenMonths / 12).toFixed(1);
+        const shareText = `I just found out my Dishwasher pays for itself in ${years} years. 🤯💸 Check if yours is worth it: ${window.location.href}`;
+        
+        // Track share attempt
+        if ((window as any).umami) (window as any).umami.track('share_result');
+    
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'Worth It? Calculator',
+                    text: shareText,
+                    url: window.location.href,
+                });
+            } catch (err) {
+                console.log('Share canceled');
+            }
+        } else {
+            try {
+                await navigator.clipboard.writeText(shareText);
+                alert("Result copied to clipboard! Paste it anywhere.");
+            } catch (err) {
+                console.error('Failed to copy', err);
+            }
+        }
+    };
+
     if (!content) return <div className="p-20 text-center text-slate-400 font-medium animate-pulse">Calculating life choices...</div>;
 
     // Badge Styles
@@ -194,7 +226,7 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
     };
 
     return (
-        <div className="w-full max-w-2xl mx-auto px-4 py-12 fade-in">
+        <div className="w-full max-w-2xl mx-auto px-4 py-12 pb-40 fade-in relative">
             
             {/* Verdict Header */}
             <div className="text-center mb-10">
@@ -327,6 +359,71 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
 
                     <div className="h-px bg-slate-200 w-full my-4"></div>
 
+                    {/* Workload (Transparency Row) */}
+                    <div className="flex items-center justify-between relative">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2 rounded-xl bg-orange-100 text-orange-600">
+                                <Utensils size={20} />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div>
+                                    <div className="font-bold text-slate-900">Estimated Workload</div>
+                                    <div className="text-xs text-slate-500">Based on your meal inputs</div>
+                                </div>
+                                
+                                {/* Info Icon & Tooltip */}
+                                <div className="relative">
+                                    <button 
+                                        className="text-slate-400 hover:text-indigo-600 transition-colors"
+                                        onMouseEnter={() => setShowTooltip(true)}
+                                        onMouseLeave={() => setShowTooltip(false)}
+                                        onClick={() => setShowTooltip(!showTooltip)}
+                                        aria-label="How is this calculated?"
+                                    >
+                                        <Info size={16} />
+                                    </button>
+
+                                    {/* Tooltip Popup */}
+                                    {showTooltip && (
+                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-slate-900 text-white p-4 rounded-xl shadow-xl z-20 text-xs leading-relaxed animate-in fade-in zoom-in-95 duration-200">
+                                            <div className="font-bold mb-2 uppercase tracking-wider text-[10px] text-slate-400">Weekly Receipt</div>
+                                            <div className="space-y-1 mb-3">
+                                                <div className="flex justify-between">
+                                                    <span>Breakfasts:</span>
+                                                    <span className="font-mono">{result.itemBreakdown.weeklyBreakfastItems} items</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span>Lunches:</span>
+                                                    <span className="font-mono">{result.itemBreakdown.weeklyLunchItems} items</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span>Dinners:</span>
+                                                    <span className="font-mono">{result.itemBreakdown.weeklyDinnerItems} items</span>
+                                                </div>
+                                            </div>
+                                            <div className="pt-2 border-t border-slate-700">
+                                                <div className="flex justify-between font-bold text-indigo-300">
+                                                    <span>Total:</span>
+                                                    <span>{result.itemBreakdown.totalWeeklyItems} items</span>
+                                                </div>
+                                                <div className="mt-1 text-[10px] text-slate-400 text-center">
+                                                    ÷ {CONSTANTS.DISHWASHER_CAPACITY} capacity = {result.loadsPerWeek.toFixed(1)} loads
+                                                </div>
+                                            </div>
+                                            {/* Arrow */}
+                                            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-t-8 border-t-slate-900"></div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="text-xl font-black text-slate-900">
+                            {result.loadsPerWeek.toFixed(1)} <span className="text-sm font-medium text-slate-400">loads/wk</span>
+                        </div>
+                    </div>
+
+                    <div className="h-px bg-slate-200 w-full my-4"></div>
+
                     {/* Net 10 Yr */}
                     <div className="flex items-center justify-between">
                          <div className="font-bold text-slate-900">Net 10-Year Value</div>
@@ -351,18 +448,27 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
                 </div>
             </div>
 
-            {/* Action */}
-            <div className="text-center">
-                <button 
-                    onClick={() => {
-                        if ((window as any).umami) (window as any).umami.track('reset_calculator');
-                        onReset();
-                    }}
-                    className="inline-flex items-center gap-2 text-slate-400 hover:text-indigo-600 font-bold transition-colors"
-                >
-                    <RotateCcw size={18} />
-                    Check Another Appliance
-                </button>
+            {/* Sticky Share Footer */}
+            <div className="fixed bottom-6 left-4 right-4 z-50 md:max-w-2xl md:mx-auto">
+                <div className="bg-white/90 backdrop-blur-md border border-slate-200 shadow-2xl rounded-2xl p-4 flex gap-3 animate-in slide-in-from-bottom-4 fade-in duration-700">
+                    <button 
+                        onClick={() => {
+                            if ((window as any).umami) (window as any).umami.track('reset_calculator');
+                            onReset();
+                        }}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+                    >
+                        <RotateCcw size={18} />
+                        Start Over
+                    </button>
+                    <button 
+                        onClick={handleShare}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95"
+                    >
+                        <Share size={18} />
+                        Share Result
+                    </button>
+                </div>
             </div>
 
             {/* Math Modal - Portal used to escape the parent transform (fade-in) */}
