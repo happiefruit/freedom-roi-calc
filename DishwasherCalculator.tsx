@@ -212,7 +212,14 @@ export const DishwasherCalculator: React.FC<Props> = ({ data, onChange, onCalcul
                         if ((window as any).umami) {
                             (window as any).umami.track('calculate_truth_clicked', {
                                 hourly_rate: data.timeValue,
-                                household_size: data.householdSize
+                                household_size: data.householdSize,
+                                // New Tracking Fields
+                                meals_breakfast: data.breakfasts,
+                                meals_lunch: data.lunches,
+                                meals_dinner: data.dinners,
+                                washing_method: data.washingMethod, // 'tap' or 'basin'
+                                machine_cost: data.machineCost,
+                                installation: data.installationType // 'diy' or 'pro'
                             });
                         }
                         onCalculate();
