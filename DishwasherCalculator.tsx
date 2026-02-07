@@ -217,7 +217,7 @@ export const DishwasherCalculator: React.FC<Props> = ({ data, onChange, onCalcul
                         }
                         onCalculate();
                     }}
-                    className="w-full max-w-lg bg-indigo-600 hover:bg-indigo-700 text-white text-lg font-bold py-4 rounded-2xl shadow-xl shadow-indigo-200 active:scale-95 transition-all"
+                    className="w-full max-w-lg bg-indigo-600 hover:bg-indigo-700 text-white text-lg font-bold py-4 rounded-2xl active:scale-95 transition-all"
                 >
                     Calculate Truth
                 </button>
