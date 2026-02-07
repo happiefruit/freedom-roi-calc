@@ -13,7 +13,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelect }) => {
             {/* Hero */}
             <div className="text-center mb-16 space-y-4">
                 <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-slate-900">
-                    Should you buy it?
+                    Stop Buying Blindly.
                 </h1>
                 <p className="text-xl text-slate-500 font-medium">
                     Brutally honest financial advice for your home.

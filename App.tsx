@@ -84,7 +84,7 @@ const App: React.FC = () => {
             {/* Nav (Minimal) */}
             <nav className="p-6 flex justify-center">
                 <div className="text-2xl font-black tracking-tighter text-slate-900 cursor-pointer" onClick={handleReset}>
-                    Worth It?
+                    Is It Worth?
                 </div>
             </nav>
 

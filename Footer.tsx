@@ -16,7 +16,7 @@ export const Footer: React.FC<FooterProps> = ({ analyticsAllowed, setAnalyticsAl
                 <div className="flex flex-col items-center justify-center text-center px-4">
                     {/* Row 1: Brand */}
                     <div className="text-sm font-semibold text-slate-900">
-                        Worth It? &copy; 2026
+                        Is It Worth? &copy; 2026
                     </div>
 
                     {/* Row 2: Disclaimer */}
