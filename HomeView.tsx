@@ -1,22 +1,60 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { UtensilsCrossed, Shirt, Bot, ChevronRight } from 'lucide-react';
 import { ApplianceType } from './types';
+
+const HERO_VARIANTS = [
+  {
+    headline: "Spend your evenings with family, not the sink.",
+    subhead: "Brutally honest math: See if buying back your time is cheaper than doing it yourself."
+  },
+  {
+    headline: "Your kids grow up fast. Chores can wait.",
+    subhead: "Prove that automating your home is an investment in your family, not a luxury expense."
+  },
+  {
+    headline: "Keep the honeymoon phase. Ditch the sponge.",
+    subhead: "The #1 cause of arguments? Chores. Calculate if saving your evening is cheaper than couples therapy."
+  },
+  {
+    headline: "Your dog misses you. The sink doesn't.",
+    subhead: "More walkies, less washing. See if a robot can buy you an extra hour of puppy time."
+  },
+  {
+    headline: "You work too hard to be your own maid.",
+    subhead: "You are not a dishwasher. Stop working for $0/hr and calculate the ROI of your freedom."
+  }
+];
 
 interface HomeViewProps {
     onSelect: (appliance: ApplianceType) => void;
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({ onSelect }) => {
+    const [heroText, setHeroText] = useState(HERO_VARIANTS[0]);
+
+    useEffect(() => {
+        const randomIndex = Math.floor(Math.random() * HERO_VARIANTS.length);
+        const selectedVariant = HERO_VARIANTS[randomIndex];
+        setHeroText(selectedVariant);
+
+        if ((window as any).umami) {
+            (window as any).umami.track('hero_variant_viewed', {
+                headline: selectedVariant.headline,
+                variant_index: randomIndex
+            });
+        }
+    }, []);
+
     return (
         <div className="w-full max-w-4xl mx-auto px-4 py-12 fade-in">
             {/* Hero Text */}
-            <div className="text-center mb-16 space-y-4">
-                <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-slate-900">
-                    Will it pay for itself?
+            <div className="text-center mb-16">
+                <h1 className="text-4xl md:text-6xl font-black text-slate-900 mb-6 leading-tight">
+                    {heroText.headline}
                 </h1>
-                <p className="text-xl text-slate-500 font-medium">
-                    Put a real price tag on your free time and see if the upgrade is worth it.
+                <p className="text-xl text-slate-600 mb-8 max-w-2xl mx-auto">
+                    {heroText.subhead}
                 </p>
             </div>
 
