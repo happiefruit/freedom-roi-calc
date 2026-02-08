@@ -11,9 +11,22 @@ export interface DishwasherData {
     lunches: number;
     dinners: number;
 
-    washingMethod: 'tap' | 'basin';
     machineCost: number;        // $
     installationType: 'diy' | 'pro';
+}
+
+export interface RobotVacuumData {
+    timeValue: number;
+    robotType: 'vac_only' | 'vac_mop';
+    machineCost: number;
+    homeSize: number;           // sq ft
+    hasPets: boolean;
+    
+    // Habits
+    manualVacFrequency: number; // times/week
+    manualVacTime: number;      // mins/session
+    manualMopFrequency: number; // times/week
+    manualMopTime: number;      // mins/session
 }
 
 export interface CalculationResult {
@@ -24,13 +37,13 @@ export interface CalculationResult {
     litresSavedPerYear: number;
     breakEvenMonths: number;
     isWorthIt: boolean;
-    isRestaurantMode: boolean;
+    isRestaurantMode: boolean; // repurposed as high-usage flag
     
     // Cost Breakdown for Charts
     upfrontCost: number;
     annualManualCost: number;
     annualMachineOpCost: number;
-    loadsPerWeek: number;
+    loadsPerWeek: number; // For robot, this is "Sessions per week"
     
     // Transparency Data
     itemBreakdown: {
@@ -39,7 +52,20 @@ export interface CalculationResult {
         weeklyDinnerItems: number;
         totalWeeklyItems: number;
     };
+
+    // New transparency inputs for tooltips
+    inputs: {
+        frequency: number;   // e.g., 5 times/week
+        duration: number;    // e.g., 20 mins/session
+        rate: number;        // e.g., $50/hr
+        periodLabel: string; // "loads/week" or "sessions/week"
+    };
+    
+    // Detailed Breakdown for Manual
+    annualManualLaborCost: number;
+    annualManualLaborHours: number;
+    annualManualSuppliesCost: number; // Water + Energy + Soap
 }
 
 // Union type for future extensibility
-export type CalculatorData = DishwasherData;
+export type CalculatorData = DishwasherData | RobotVacuumData;

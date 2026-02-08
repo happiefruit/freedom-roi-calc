@@ -1,12 +1,13 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { AppView, ApplianceType, DishwasherData } from './types';
-import { DEFAULT_DISHWASHER_DATA } from './constants';
-import { calculateDishwasherROI } from './utils';
+import { AppView, ApplianceType, DishwasherData, RobotVacuumData } from './types';
+import { DEFAULT_DISHWASHER_DATA, DEFAULT_ROBOT_DATA } from './constants';
+import { calculateDishwasherROI, calculateRobotVacuumROI } from './utils';
 
 // Views
 import { HomeView } from './HomeView';
 import { DishwasherCalculator } from './DishwasherCalculator';
+import { RobotVacuumCalculator } from './RobotVacuumCalculator';
 import { ResultsView } from './ResultsView';
 import { Footer } from './Footer';
 
@@ -17,6 +18,7 @@ const App: React.FC = () => {
     
     // Data Store
     const [dishwasherData, setDishwasherData] = useState<DishwasherData>(DEFAULT_DISHWASHER_DATA);
+    const [robotData, setRobotData] = useState<RobotVacuumData>(DEFAULT_ROBOT_DATA);
 
     // --- Analytics Consent ---
     const [analyticsAllowed, setAnalyticsAllowed] = useState(() => {
@@ -66,6 +68,7 @@ const App: React.FC = () => {
         setView('home');
         setSelectedAppliance(null);
         setDishwasherData(DEFAULT_DISHWASHER_DATA);
+        setRobotData(DEFAULT_ROBOT_DATA);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -74,8 +77,11 @@ const App: React.FC = () => {
         if (selectedAppliance === 'dishwasher') {
             return calculateDishwasherROI(dishwasherData);
         }
+        if (selectedAppliance === 'robot-vacuum') {
+            return calculateRobotVacuumROI(robotData);
+        }
         return null;
-    }, [selectedAppliance, dishwasherData]);
+    }, [selectedAppliance, dishwasherData, robotData]);
 
     // --- Render Flow ---
     return (
@@ -102,11 +108,21 @@ const App: React.FC = () => {
                     />
                 )}
 
-                {view === 'result' && results && (
+                {view === 'calculator' && selectedAppliance === 'robot-vacuum' && (
+                    <RobotVacuumCalculator 
+                        data={robotData} 
+                        onChange={setRobotData}
+                        onCalculate={handleCalculate}
+                        onBack={() => setView('home')}
+                    />
+                )}
+
+                {view === 'result' && results && selectedAppliance && (
                     <ResultsView 
                         result={results}
-                        data={dishwasherData}
+                        data={selectedAppliance === 'dishwasher' ? dishwasherData : robotData}
                         onReset={handleReset}
+                        applianceId={selectedAppliance === 'dishwasher' ? 'dishwasher' : 'robot_vacuum'}
                     />
                 )}
             </main>

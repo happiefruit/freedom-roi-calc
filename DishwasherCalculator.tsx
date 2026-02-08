@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { DishwasherData } from './types';
-import { Wrench, Droplets, Clock, Utensils, ChefHat } from 'lucide-react';
+import { Wrench, Clock, ChefHat } from 'lucide-react';
 
 interface Props {
     data: DishwasherData;
@@ -128,41 +128,7 @@ export const DishwasherCalculator: React.FC<Props> = ({ data, onChange, onCalcul
                     </div>
                 </div>
 
-                {/* 3. Method */}
-                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-cyan-100 text-cyan-600 rounded-lg">
-                            <Droplets size={20} />
-                        </div>
-                        <label className="font-bold text-slate-900">Current Method</label>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <button
-                            onClick={() => update('washingMethod', 'tap')}
-                            className={`p-4 rounded-xl border-2 text-left transition-all ${
-                                data.washingMethod === 'tap'
-                                ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
-                                : 'border-slate-100 hover:border-slate-300 text-slate-500'
-                            }`}
-                        >
-                            <div className="font-bold text-sm mb-1">Running Tap</div>
-                            <div className="text-xs opacity-75">High waste</div>
-                        </button>
-                        <button
-                            onClick={() => update('washingMethod', 'basin')}
-                            className={`p-4 rounded-xl border-2 text-left transition-all ${
-                                data.washingMethod === 'basin'
-                                ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
-                                : 'border-slate-100 hover:border-slate-300 text-slate-500'
-                            }`}
-                        >
-                            <div className="font-bold text-sm mb-1">Soak/Basin</div>
-                            <div className="text-xs opacity-75">Conservative</div>
-                        </button>
-                    </div>
-                </div>
-
-                {/* 4. Costs */}
+                {/* 3. Costs */}
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg">
@@ -217,7 +183,6 @@ export const DishwasherCalculator: React.FC<Props> = ({ data, onChange, onCalcul
                                 meals_breakfast: data.breakfasts,
                                 meals_lunch: data.lunches,
                                 meals_dinner: data.dinners,
-                                washing_method: data.washingMethod, // 'tap' or 'basin'
                                 machine_cost: data.machineCost,
                                 installation: data.installationType // 'diy' or 'pro'
                             });

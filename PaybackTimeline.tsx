@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Calendar, CheckCircle2, DollarSign } from 'lucide-react';
 
@@ -6,9 +5,10 @@ interface Props {
     breakEvenMonths: number;
     loadsPerWeek: number;
     hourlyRate: number;
+    unitLabel?: string;
 }
 
-export const PaybackTimeline: React.FC<Props> = ({ breakEvenMonths, loadsPerWeek, hourlyRate }) => {
+export const PaybackTimeline: React.FC<Props> = ({ breakEvenMonths, loadsPerWeek, hourlyRate, unitLabel = "loads/wk" }) => {
     const MAX_MONTHS = 120; // 10 Years
     
     // Cap percentage at 100% (or slightly less to ensure the marker stays visible at the very end)
@@ -40,7 +40,7 @@ export const PaybackTimeline: React.FC<Props> = ({ breakEvenMonths, loadsPerWeek
                         }
                      </div>
                      <div className="text-[10px] text-slate-400 mt-1 font-medium">
-                        Based on {loadsPerWeek < 1 ? loadsPerWeek.toFixed(1) : Math.round(loadsPerWeek)} loads/wk @ ${hourlyRate}/hr
+                        Based on {loadsPerWeek < 1 ? loadsPerWeek.toFixed(1) : Math.round(loadsPerWeek)} {unitLabel} @ ${hourlyRate}/hr
                      </div>
                 </div>
             </div>

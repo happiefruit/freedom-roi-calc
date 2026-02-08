@@ -1,6 +1,6 @@
 
-import { DishwasherData, CalculationResult } from './types';
-import { CONSTANTS } from './constants';
+import { DishwasherData, RobotVacuumData, CalculationResult } from './types';
+import { CONSTANTS, ROBOT_CONSTANTS } from './constants';
 
 export const calculateDishwasherROI = (data: DishwasherData): CalculationResult => {
     const { 
@@ -9,7 +9,6 @@ export const calculateDishwasherROI = (data: DishwasherData): CalculationResult 
         breakfasts,
         lunches,
         dinners, 
-        washingMethod, 
         machineCost, 
         installationType 
     } = data;
@@ -34,8 +33,9 @@ export const calculateDishwasherROI = (data: DishwasherData): CalculationResult 
     const loadsPerYear = loadsPerWeek * 52;
 
     // 2. Manual Washing Costs (Annual)
+    // Defaulting to "Tap" method (worst case) as per simplification requirement
     const manualTimeHours = (loadsPerYear * CONSTANTS.TIME_MANUAL_WASH_PER_LOAD) / 60;
-    const manualWaterLitres = loadsPerYear * (washingMethod === 'tap' ? CONSTANTS.WATER_MANUAL_TAP_PER_LOAD : CONSTANTS.WATER_MANUAL_BASIN_PER_LOAD);
+    const manualWaterLitres = loadsPerYear * CONSTANTS.WATER_MANUAL_TAP_PER_LOAD;
     const manualEnergyKwh = manualWaterLitres * CONSTANTS.ENERGY_TO_HEAT_WATER_LITRE; // Heating the water
     
     const costManualTime = manualTimeHours * timeValue;
@@ -95,7 +95,118 @@ export const calculateDishwasherROI = (data: DishwasherData): CalculationResult 
             weeklyLunchItems,
             weeklyDinnerItems,
             totalWeeklyItems
-        }
+        },
+        inputs: {
+            frequency: parseFloat(loadsPerWeek.toFixed(1)),
+            duration: CONSTANTS.TIME_MANUAL_WASH_PER_LOAD,
+            rate: timeValue,
+            periodLabel: 'loads/wk'
+        },
+        annualManualLaborCost: costManualTime,
+        annualManualLaborHours: manualTimeHours,
+        annualManualSuppliesCost: costManualWater + costManualEnergy + costManualSoap
+    };
+};
+
+export const calculateRobotVacuumROI = (data: RobotVacuumData): CalculationResult => {
+    const {
+        timeValue,
+        robotType,
+        machineCost,
+        hasPets,
+        manualVacFrequency,
+        manualVacTime,
+        manualMopFrequency,
+        manualMopTime
+    } = data;
+
+    // 1. Manual Labor Costs (Annual)
+    // Vacuuming
+    const annualVacHours = (manualVacFrequency * manualVacTime * 52) / 60;
+    
+    // Mopping (Only applies if user actually mops AND buys a robot that mops)
+    // If they buy a vac_only, we don't count mop savings because they still have to mop manually.
+    const effectiveMopFreq = robotType === 'vac_mop' ? manualMopFrequency : 0;
+    const annualMopHours = (effectiveMopFreq * manualMopTime * 52) / 60;
+    
+    const totalManualHours = annualVacHours + annualMopHours;
+    const annualManualCost = totalManualHours * timeValue;
+
+    // 2. Robot Costs (Annual Operational)
+    
+    // Electricity
+    let annualElec = ROBOT_CONSTANTS.ELEC_BASE;
+    if (robotType === 'vac_mop') annualElec += ROBOT_CONSTANTS.ELEC_MOP_ADDON;
+
+    // Consumables
+    let annualConsumables = ROBOT_CONSTANTS.CONSUMABLES_BASE;
+    if (hasPets) annualConsumables += ROBOT_CONSTANTS.CONSUMABLES_PET_PENALTY;
+    if (robotType === 'vac_mop') annualConsumables += ROBOT_CONSTANTS.CONSUMABLES_MOP;
+
+    // Maintenance Labor (Bin emptying, detangling)
+    // Assuming robot reduces 95% of labor, but adds 5 mins/week maintenance
+    const annualMaintenanceHours = (ROBOT_CONSTANTS.ROBOT_MAINTENANCE_MINS_WEEK * 52) / 60;
+    const annualMaintenanceCost = annualMaintenanceHours * timeValue;
+
+    const annualMachineOpCost = annualElec + annualConsumables + annualMaintenanceCost;
+
+    // 3. Ten Year Projection
+    
+    // Battery Replacements (Years 3, 6, 9) -> 3 times in 10 years
+    const totalBatteryCost = ROBOT_CONSTANTS.BATTERY_REPLACEMENT_COST * 3;
+
+    const tenYearManualCost = annualManualCost * 10;
+    const tenYearMachineCost = machineCost + (annualMachineOpCost * 10) + totalBatteryCost;
+    
+    const netSavings10Year = tenYearManualCost - tenYearMachineCost;
+    
+    // 4. Metrics
+    const hoursSavedPerYear = totalManualHours - annualMaintenanceHours;
+    
+    // Litres saved (Only relevant if mopping)
+    const litresSavedPerYear = robotType === 'vac_mop' 
+        ? (effectiveMopFreq * ROBOT_CONSTANTS.LITRES_PER_MANUAL_MOP * 52) 
+        : 0;
+
+    const totalAnnualBenefit = annualManualCost - annualMachineOpCost - (totalBatteryCost / 10);
+    const breakEvenMonths = totalAnnualBenefit > 0 ? (machineCost / totalAnnualBenefit) * 12 : 999;
+
+    // Roast/Warning Logic: If home is massive (>3000 sqft) one robot might die trying
+    const isRestaurantMode = data.homeSize > 3000;
+
+    // Calculate aggregated input stats for display
+    const totalFreq = manualVacFrequency + effectiveMopFreq;
+    // Weighted avg duration if mixed
+    const avgDuration = totalFreq > 0 ? (totalManualHours * 60 / 52) / totalFreq : 0;
+
+    return {
+        tenYearManualCost,
+        tenYearMachineCost,
+        netSavings10Year,
+        hoursSavedPerYear,
+        litresSavedPerYear,
+        breakEvenMonths,
+        isWorthIt: netSavings10Year > 0,
+        isRestaurantMode,
+        upfrontCost: machineCost,
+        annualManualCost,
+        annualMachineOpCost: annualMachineOpCost + (totalBatteryCost/10), // Amortized battery
+        loadsPerWeek: totalFreq,
+        itemBreakdown: {
+            weeklyBreakfastItems: 0,
+            weeklyLunchItems: 0,
+            weeklyDinnerItems: 0,
+            totalWeeklyItems: 0
+        },
+        inputs: {
+            frequency: totalFreq,
+            duration: Math.round(avgDuration),
+            rate: timeValue,
+            periodLabel: 'sessions/wk'
+        },
+        annualManualLaborCost: annualManualCost,
+        annualManualLaborHours: totalManualHours,
+        annualManualSuppliesCost: 0
     };
 };
 

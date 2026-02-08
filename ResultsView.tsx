@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { CalculationResult, DishwasherData } from './types';
+import { CalculationResult, CalculatorData } from './types';
 import { formatMoney, formatNumber } from './utils';
 import { PaybackTimeline } from './PaybackTimeline';
 import { CONSTANTS } from './constants';
@@ -14,122 +14,141 @@ import {
     Smartphone,
     Bed,
     BookOpen,
-    Bath,
-    Wine,
-    Waves,
     Calculator,
     X,
     Info,
     Utensils,
-    Share
+    Sparkles,
+    Share,
+    Gamepad2,
+    Dumbbell,
+    Flower2
 } from 'lucide-react';
 
 interface Props {
     result: CalculationResult;
-    data: DishwasherData;
+    data: CalculatorData;
     onReset: () => void;
+    applianceId: 'dishwasher' | 'robot_vacuum';
 }
 
 // --- Copywriting Assets ---
 
-const HEADLINES = {
-    high: [
-        "Divorce the Sponge.",
-        "Welcome to the 21st Century.",
-        "Your Hands Deserve Better.",
-        "Stop Being a Kitchen Martyr."
-    ],
-    low: [
-        "Keep the Sponge, Miyagi.",
-        "The Math Says No.",
-        "Don't Burn the Cash.",
-        "Stick to the Sink."
-    ]
-};
-
-const SUBHEADS = {
-    high: [
-        (h: string) => `You're wasting ${h} hours a year. That's not 'saving money,' that's volunteering for a job nobody wants.`,
-        (h: string) => "A robot can do this job for pennies while you sleep. Let it.",
-        (h: string) => `Imagine explaining to your grandkids that you washed dishes for ${h} hours just to save 12 cents.`
-    ],
-    low: [
-        () => "You don't generate enough mess to justify a robot yet.",
-        () => "Your time is valuable, but your dish pile isn't big enough to care.",
-        () => "Manual washing is actually cheaper for your lifestyle. Enjoy the zen."
-    ]
+const COPY_CONFIG = {
+  dishwasher: {
+    success_headline: "Divorce the sponge.",
+    success_subhead: "You are wasting money by doing it yourself.",
+    fail_headline: "Keep the sponge.",
+    fail_subhead: "Your time isn't worth the upgrade cost yet.",
+    share_win: (years: string) => `I just found out my dishwasher pays for itself in ${years} years. 🧽💔 Check yours:`,
+    share_loss: (saved: string) => `The math says NO. 🚫 I'm saving ${saved} by washing dishes manually.`
+  },
+  robot_vacuum: {
+    success_headline: "Sack the broom.",
+    success_subhead: "Stop cleaning for free. Let the robot do the dirty work.",
+    fail_headline: "Keep sweeping.",
+    fail_subhead: "For your small space, a robot is just a pricey toy.",
+    share_win: (years: string) => `My robot vacuum pays for itself in ${years} years. I'm literally making money by sleeping. 😴💸 Check yours:`,
+    share_loss: (saved: string) => `The math says NO. 🚫 I'm saving ${saved} by sweeping it myself.`
+  }
 };
 
 // --- Fun Units Data ---
 
 const FUN_TIME_UNITS = [
     {
-        label: "Netflix Binges",
-        ratio: 0.75,
-        text: (v: string) => `${v} episodes of 'The Office' you missed.`,
-        icon: Tv,
-        color: "text-red-500",
-        bg: "bg-red-50"
+        label: "Gaming Wins",
+        ratio: 0.5, // ~30 min ranked match
+        text: (v: string) => `${v} ranked matches you could have carried.`,
+        icon: Gamepad2,
+        color: "text-violet-500",
+        bg: "bg-violet-50"
     },
     {
-        label: "TikTok Doomscrolling",
-        ratio: 1.0,
-        text: (v: string) => `${v} solid hours of brain rot.`,
-        icon: Smartphone,
-        color: "text-pink-500",
-        bg: "bg-pink-50"
+        label: "Gym Gains",
+        ratio: 1.5, // ~90 min workout
+        text: (v: string) => `${v} full gym sessions (including leg day).`,
+        icon: Dumbbell,
+        color: "text-emerald-600",
+        bg: "bg-emerald-50"
+    },
+    {
+        label: "Pilates/Yoga",
+        ratio: 1.0, // 1 hour class
+        text: (v: string) => `${v} 'Pilates Princess' classes.`,
+        icon: Flower2,
+        color: "text-rose-400",
+        bg: "bg-rose-50"
     },
     {
         label: "Power Naps",
-        ratio: 0.33,
-        text: (v: string) => `${v} glorious power naps.`,
+        ratio: 0.33, // 20 mins
+        text: (v: string) => `${v} guilt-free power naps.`,
         icon: Bed,
         color: "text-indigo-500",
         bg: "bg-indigo-50"
     },
     {
-        label: "Books Read",
-        ratio: 10,
-        text: (v: string) => `${v} books read cover-to-cover.`,
+        label: "Doomscrolling",
+        ratio: 1.0, // 1 hour
+        text: (v: string) => `${v} hours of dissociation on TikTok.`,
+        icon: Smartphone,
+        color: "text-pink-500",
+        bg: "bg-pink-50"
+    },
+    {
+        label: "Netflix Binges",
+        ratio: 0.75, // ~45 min episode
+        text: (v: string) => `${v} episodes of that show you're re-watching.`,
+        icon: Tv,
+        color: "text-red-500",
+        bg: "bg-red-50"
+    },
+    {
+        label: "Reading",
+        ratio: 0.5, // ~30 mins per chapter
+        text: (v: string) => `${v} chapters of the book on your nightstand.`,
         icon: BookOpen,
-        color: "text-emerald-500",
-        bg: "bg-emerald-50"
+        color: "text-amber-600",
+        bg: "bg-amber-50"
     }
 ];
 
-const FUN_WATER_UNITS = [
-    {
-        label: "Bathtubs",
-        ratio: 150,
-        text: (v: string) => `Enough water to fill ${v} bathtubs (over 10 years).`,
-        icon: Bath,
-        color: "text-blue-500",
-        bg: "bg-blue-50"
-    },
-    {
-        label: "Wine Bottles",
-        ratio: 0.75,
-        text: (v: string) => `${v} bottles of wine (over 10 years).`,
-        icon: Wine,
-        color: "text-purple-500",
-        bg: "bg-purple-50"
-    },
-    {
-        label: "Thirsty Elephants",
-        ratio: 300,
-        text: (v: string) => `Enough to hydrate ${v} elephants.`,
-        icon: Waves,
-        color: "text-sky-600",
-        bg: "bg-sky-50"
-    }
-];
+// --- Simple Tooltip Component ---
+const SimpleTooltip = ({ content, colorClass = "text-slate-400" }: { content: React.ReactNode, colorClass?: string }) => {
+    const [open, setOpen] = useState(false);
+    return (
+        <div className="relative inline-flex ml-2 align-middle z-20">
+            <button 
+                onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+                onMouseEnter={() => setOpen(true)}
+                onMouseLeave={() => setOpen(false)}
+                className={`${colorClass} hover:opacity-100 opacity-70 transition-opacity`}
+                aria-label="Show breakdown"
+            >
+                <Info size={14} />
+            </button>
+            {open && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-slate-900 text-white text-xs p-3 rounded-xl shadow-xl z-50 animate-in fade-in zoom-in-95 leading-relaxed text-left cursor-auto">
+                    {content}
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-t-8 border-t-slate-900"></div>
+                </div>
+            )}
+        </div>
+    )
+};
 
-export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
+export const ResultsView: React.FC<Props> = ({ result, data, onReset, applianceId }) => {
     
     // State for dynamic content
     const [content, setContent] = useState<any>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [showTooltip, setShowTooltip] = useState(false);
+
+    // Identify Appliance Type & Config
+    const isDishwasher = applianceId === 'dishwasher';
+    const ScheduleIcon = isDishwasher ? Utensils : Sparkles;
+    const frequencyUnit = isDishwasher ? "loads/wk" : "runs/wk";
 
     // Determine Verdict Tier
     const verdictTier = useMemo(() => {
@@ -142,25 +161,25 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
     }, [result]);
 
     useEffect(() => {
+        const config = COPY_CONFIG[applianceId];
         let selectedHeadline, selectedSubhead;
 
-        if (verdictTier === 'borderline') {
-            selectedHeadline = "It's a Luxury, Not a Savings Plan.";
-            const years = Math.ceil(result.breakEvenMonths / 12);
-            selectedSubhead = `You will eventually break even in Year ${years}, but this is mostly about convenience, not cash. You're paying for comfort. If you plan to stay in this home for 5+ years, it pays off. If you're renting, stick to hand washing.`;
+        if (verdictTier === 'low') {
+            selectedHeadline = config.fail_headline;
+            selectedSubhead = config.fail_subhead;
         } else {
-            // Randomization Logic for High/Low
-            const headlines = verdictTier === 'high' ? HEADLINES.high : HEADLINES.low;
-            selectedHeadline = headlines[Math.floor(Math.random() * headlines.length)];
-
-            const subheads = verdictTier === 'high' ? SUBHEADS.high : SUBHEADS.low;
-            const subheadFn = subheads[Math.floor(Math.random() * subheads.length)];
-            selectedSubhead = subheadFn(formatNumber(result.hoursSavedPerYear));
+            // For high and borderline, we use the success copy
+            selectedHeadline = config.success_headline;
+            selectedSubhead = config.success_subhead;
+            
+            if (verdictTier === 'borderline') {
+                 // Keep the pragmatic warning for borderline cases as an override or append
+                 selectedSubhead += " (Though it will take a few years to pay off).";
+            }
         }
 
         // Fun Units (Random selection)
         const randomTime = FUN_TIME_UNITS[Math.floor(Math.random() * FUN_TIME_UNITS.length)];
-        const randomWater = FUN_WATER_UNITS[Math.floor(Math.random() * FUN_WATER_UNITS.length)];
 
         setContent({
             headline: selectedHeadline,
@@ -168,14 +187,10 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
             timeUnit: {
                 ...randomTime,
                 val: Math.max(0, result.hoursSavedPerYear) / randomTime.ratio
-            },
-            waterUnit: {
-                ...randomWater,
-                val: Math.max(0, result.litresSavedPerYear * 10) / randomWater.ratio
             }
         });
 
-    }, [result, verdictTier]); 
+    }, [result, verdictTier, applianceId]); 
 
     // Lock Body Scroll when Modal is open
     useEffect(() => {
@@ -189,9 +204,78 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
         };
     }, [isModalOpen]);
 
+    // Breakdown Logic for Tooltips
+    const breakdown = useMemo(() => {
+        if (isDishwasher) {
+            const d = data as any;
+            
+            const machinePurchase = d.machineCost + (d.installationType === 'pro' ? 200 : 0);
+            const machineOp10Y = result.tenYearMachineCost - machinePurchase;
+
+            return {
+                manual: (
+                    <div className="font-mono text-xs space-y-1">
+                        <div className="border-b border-slate-700 pb-1 mb-1 font-bold text-slate-300">
+                            The Labor Math:
+                        </div>
+                        <div>{result.inputs.duration} min × {result.inputs.frequency} {result.inputs.periodLabel}</div>
+                        <div>× 52 weeks = <span className="text-yellow-400">{Math.round(result.annualManualLaborHours)} hrs/yr</span></div>
+                        <div>× ${result.inputs.rate}/hr = <span className="text-green-400">${formatMoney(result.annualManualLaborCost)}</span></div>
+                        <div className="mt-1 pt-1 border-t border-slate-700 text-slate-400">
+                            + Water/Supplies: ${formatMoney(result.annualManualSuppliesCost)}
+                        </div>
+                    </div>
+                ),
+                machine: (
+                    <div>
+                         <div className="font-bold text-slate-300 border-b border-slate-700 pb-1 mb-1">10-Year Cost Breakdown</div>
+                         <div className="flex justify-between"><span>Unit & Install:</span> <span>{formatMoney(machinePurchase)}</span></div>
+                         <div className="flex justify-between"><span>Water/Elec/Pods:</span> <span>{formatMoney(machineOp10Y)}</span></div>
+                    </div>
+                )
+            };
+        } else {
+            // Robot
+            const r = data as any;
+            
+            const purchase = r.machineCost;
+            const batteries = 70 * 3;
+            const maintenance10Y = result.tenYearMachineCost - purchase - batteries;
+
+             return {
+                manual: (
+                    <div className="font-mono text-xs space-y-1">
+                        <div className="border-b border-slate-700 pb-1 mb-1 font-bold text-slate-300">
+                            The Labor Math:
+                        </div>
+                        <div>{result.inputs.duration} min × {result.inputs.frequency} {result.inputs.periodLabel}</div>
+                        <div>× 52 weeks = <span className="text-yellow-400">{Math.round(result.annualManualLaborHours)} hrs/yr</span></div>
+                        <div>× ${result.inputs.rate}/hr = <span className="text-green-400">${formatMoney(result.annualManualLaborCost)}</span></div>
+                    </div>
+                ),
+                machine: (
+                    <div>
+                         <div className="font-bold text-slate-300 border-b border-slate-700 pb-1 mb-1">10-Year Cost Breakdown</div>
+                         <div className="flex justify-between"><span>Unit Price:</span> <span>{formatMoney(purchase)}</span></div>
+                         <div className="flex justify-between"><span>Batteries (3x):</span> <span>{formatMoney(batteries)}</span></div>
+                         <div className="flex justify-between"><span>Parts & Elec:</span> <span>{formatMoney(maintenance10Y)}</span></div>
+                    </div>
+                )
+            };
+        }
+    }, [result, data, isDishwasher]);
+
     const handleShare = async () => {
-        const years = (result.breakEvenMonths / 12).toFixed(1);
-        const shareText = `I just found out my Dishwasher pays for itself in ${years} years. 🤯💸 Check if yours is worth it: ${window.location.href}`;
+        const config = COPY_CONFIG[applianceId];
+        let shareText;
+
+        if (result.isWorthIt) {
+            const years = (result.breakEvenMonths / 12).toFixed(1);
+            shareText = config.share_win(years) + ` ${window.location.href}`;
+        } else {
+            const saved = formatMoney(Math.abs(result.netSavings10Year));
+            shareText = config.share_loss(saved) + ` ${window.location.href}`;
+        }
         
         // Track share attempt
         if ((window as any).umami) (window as any).umami.track('share_result');
@@ -250,7 +334,10 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
                      <div>
                          <h4 className="font-bold text-yellow-900 text-sm mb-1">Reality Check</h4>
                          <p className="text-sm text-yellow-800">
-                             You are running a restaurant, not a home. A dishwasher isn't a luxury for you, it's an employee.
+                             {isDishwasher 
+                                ? "You are running a restaurant, not a home. A dishwasher isn't a luxury for you, it's an employee."
+                                : "Your home is massive. You might need an industrial fleet, not one robot."
+                             }
                          </p>
                      </div>
                 </div>
@@ -259,9 +346,12 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
             {/* Comparison Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                 {/* Manual */}
-                <div className="bg-white p-6 rounded-3xl border border-slate-200 relative overflow-hidden">
+                <div className="bg-white p-6 rounded-3xl border border-slate-200 relative z-20">
                     <div className="relative z-10">
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Hand Washing</h3>
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1 flex items-center">
+                            {isDishwasher ? "Hand Washing" : "Manual Cleaning"}
+                            <SimpleTooltip content={breakdown.manual} />
+                        </h3>
                         <div className="text-3xl font-black text-slate-900 mb-1">
                             {formatMoney(result.tenYearManualCost)}
                         </div>
@@ -270,10 +360,14 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
                 </div>
 
                 {/* Machine */}
-                <div className={`p-6 rounded-3xl border relative overflow-hidden ${verdictTier !== 'low' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white border-slate-200'}`}>
+                <div className={`p-6 rounded-3xl border relative z-10 ${verdictTier !== 'low' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white border-slate-200'}`}>
                     <div className="relative z-10">
-                        <h3 className={`text-xs font-bold uppercase tracking-widest mb-1 ${verdictTier !== 'low' ? 'text-indigo-200' : 'text-slate-400'}`}>
-                            Dishwasher
+                        <h3 className={`text-xs font-bold uppercase tracking-widest mb-1 flex items-center ${verdictTier !== 'low' ? 'text-indigo-200' : 'text-slate-400'}`}>
+                            {isDishwasher ? "Dishwasher" : "Robot Vacuum"}
+                            <SimpleTooltip 
+                                content={breakdown.machine} 
+                                colorClass={verdictTier !== 'low' ? 'text-indigo-200' : 'text-slate-400'}
+                            />
                         </h3>
                         <div className={`text-3xl font-black mb-1 ${verdictTier !== 'low' ? 'text-white' : 'text-slate-900'}`}>
                             {formatMoney(result.tenYearMachineCost)}
@@ -285,18 +379,19 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
                 </div>
             </div>
 
-            {/* Payback Timeline (Replaced LineChart) */}
+            {/* Payback Timeline - Visible for ALL appliances if worth it */}
             {result.isWorthIt && result.breakEvenMonths < 120 && (
                 <PaybackTimeline 
                     breakEvenMonths={result.breakEvenMonths} 
                     loadsPerWeek={result.loadsPerWeek}
                     hourlyRate={data.timeValue}
+                    unitLabel={frequencyUnit}
                 />
             )}
 
             {/* Fun Units Grid */}
             <h3 className="text-sm font-bold text-slate-900 mb-4 px-2">What you could have done instead</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+            <div className="grid grid-cols-1 gap-4 mb-8">
                 
                 {/* Time Fun Unit */}
                 <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
@@ -312,24 +407,6 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
                         </div>
                         <div className="text-xs text-slate-500 font-medium leading-tight">
                             {content.timeUnit.text(formatNumber(content.timeUnit.val))}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Water Fun Unit */}
-                <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
-                    <div className={`p-3 rounded-2xl ${content.waterUnit.bg} ${content.waterUnit.color}`}>
-                        <content.waterUnit.icon size={24} />
-                    </div>
-                    <div>
-                         <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                            {content.waterUnit.label}
-                        </div>
-                        <div className="text-3xl font-black text-slate-900 leading-none mb-1">
-                            {formatNumber(content.waterUnit.val)}
-                        </div>
-                        <div className="text-xs text-slate-500 font-medium leading-tight">
-                            {content.waterUnit.text(formatNumber(content.waterUnit.val))}
                         </div>
                     </div>
                 </div>
@@ -363,15 +440,20 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
                     <div className="flex items-center justify-between relative">
                         <div className="flex items-center gap-4">
                             <div className="p-2 rounded-xl bg-orange-100 text-orange-600">
-                                <Utensils size={20} />
+                                <ScheduleIcon size={20} />
                             </div>
                             <div className="flex items-center gap-2">
                                 <div>
-                                    <div className="font-bold text-slate-900">Estimated Workload</div>
-                                    <div className="text-xs text-slate-500">Based on your meal inputs</div>
+                                    <div className="font-bold text-slate-900">
+                                        {isDishwasher ? "Estimated Workload" : "Cleaning Schedule"}
+                                    </div>
+                                    <div className="text-xs text-slate-500">
+                                        {isDishwasher ? "Based on your meal inputs" : "Sessions per week"}
+                                    </div>
                                 </div>
                                 
-                                {/* Info Icon & Tooltip */}
+                                {/* Info Icon & Tooltip - Only for Dishwasher as it has complex item logic */}
+                                {isDishwasher && (
                                 <div className="relative">
                                     <button 
                                         className="text-slate-400 hover:text-indigo-600 transition-colors"
@@ -415,10 +497,11 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
                                         </div>
                                     )}
                                 </div>
+                                )}
                             </div>
                         </div>
                         <div className="text-xl font-black text-slate-900">
-                            {result.loadsPerWeek.toFixed(1)} <span className="text-sm font-medium text-slate-400">loads/wk</span>
+                            {result.loadsPerWeek.toFixed(1)} <span className="text-sm font-medium text-slate-400">{frequencyUnit}</span>
                         </div>
                     </div>
 
@@ -498,27 +581,50 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
                             
                             {/* Section A */}
                             <div className="space-y-3">
-                                <h4 className="font-bold text-indigo-600 text-sm uppercase tracking-wider">A. The Hand-Washing Tax</h4>
-                                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 font-mono text-xs text-slate-600 overflow-x-auto">
-                                    ((Loads &times; 10 Yrs) &times; (20 mins &times; {formatMoney(data.timeValue)}/hr)) + Water & Heat
-                                </div>
-                                <p className="text-sm text-slate-600 leading-relaxed">
-                                    We assumed hand-washing takes <strong>~20 mins</strong> of active labor per load (scrubbing + drying). 
-                                    A machine takes 5 mins to load/unload. You are paying yourself <strong>{formatMoney(data.timeValue)}/hr</strong> to stand at the sink.
-                                </p>
-                                <p className="text-sm text-slate-600">
-                                    Plus the cost of warm water and liquid soap vs. efficient machine cycles.
-                                </p>
+                                <h4 className="font-bold text-indigo-600 text-sm uppercase tracking-wider">
+                                    {isDishwasher ? "A. The Hand-Washing Tax" : "A. The Manual Labor Tax"}
+                                </h4>
+                                
+                                {isDishwasher ? (
+                                    <>
+                                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 font-mono text-xs text-slate-600 overflow-x-auto">
+                                        ((Loads &times; 10 Yrs) &times; (20 mins &times; {formatMoney(data.timeValue)}/hr)) + Water & Heat
+                                    </div>
+                                    <p className="text-sm text-slate-600 leading-relaxed">
+                                        We assumed hand-washing takes <strong>~20 mins</strong> of active labor per load (scrubbing + drying). 
+                                        A machine takes 5 mins to load/unload. You are paying yourself <strong>{formatMoney(data.timeValue)}/hr</strong> to stand at the sink.
+                                    </p>
+                                    <p className="text-sm text-slate-600">
+                                        Plus the cost of warm water and liquid soap vs. efficient machine cycles.
+                                    </p>
+                                    </>
+                                ) : (
+                                    <>
+                                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 font-mono text-xs text-slate-600 overflow-x-auto">
+                                        ((Sessions &times; 10 Yrs) &times; (Avg Duration &times; {formatMoney(data.timeValue)}/hr))
+                                    </div>
+                                    <p className="text-sm text-slate-600 leading-relaxed">
+                                        We calculated manual cost based on your reported cleaning frequency and duration. 
+                                        You are paying yourself <strong>{formatMoney(data.timeValue)}/hr</strong> to do the chores yourself.
+                                    </p>
+                                    </>
+                                )}
                             </div>
 
                             {/* Section B */}
                             <div className="space-y-3">
                                 <h4 className="font-bold text-indigo-600 text-sm uppercase tracking-wider">B. The Machine Cost</h4>
                                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 font-mono text-xs text-slate-600 overflow-x-auto">
-                                    {formatMoney(data.machineCost)} (Unit) + Install + (10 Yrs &times; Elec/Water/Pods)
+                                    {isDishwasher 
+                                        ? `${formatMoney(data.machineCost)} (Unit) + Install + (10 Yrs × Elec/Water/Pods)`
+                                        : `${formatMoney(data.machineCost)} (Unit) + (10 Yrs × Maint/Elec/Battery)`
+                                    }
                                 </div>
                                 <p className="text-sm text-slate-600 leading-relaxed">
-                                    Even with electricity and expensive detergent pods, the machine uses <strong>~80% less water</strong> and electricity than a running tap.
+                                    {isDishwasher 
+                                        ? "Even with electricity and expensive detergent pods, the machine uses ~80% less water and electricity than a running tap."
+                                        : "Includes electricity charging, replacement parts (filters/bags), and battery replacements every 3 years."
+                                    }
                                 </p>
                             </div>
 
@@ -549,4 +655,4 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset }) => {
 
         </div>
     );
-};
+}

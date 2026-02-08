@@ -1,5 +1,5 @@
 
-import { DishwasherData } from './types';
+import { DishwasherData, RobotVacuumData } from './types';
 
 // Default initial state
 export const DEFAULT_DISHWASHER_DATA: DishwasherData = {
@@ -8,9 +8,20 @@ export const DEFAULT_DISHWASHER_DATA: DishwasherData = {
     breakfasts: 0,
     lunches: 0,
     dinners: 0,
-    washingMethod: 'tap',
     machineCost: 800,
     installationType: 'diy'
+};
+
+export const DEFAULT_ROBOT_DATA: RobotVacuumData = {
+    timeValue: 25,
+    robotType: 'vac_only',
+    machineCost: 400,
+    homeSize: 1500,
+    hasPets: false,
+    manualVacFrequency: 1,
+    manualVacTime: 30,
+    manualMopFrequency: 0, // Hidden by default
+    manualMopTime: 20
 };
 
 // Physics & Economics
@@ -46,4 +57,23 @@ export const CONSTANTS = {
     
     // Machine Capacity (Total individual items standard load)
     DISHWASHER_CAPACITY: 45
+};
+
+export const ROBOT_CONSTANTS = {
+    // Annual Costs
+    ELEC_BASE: 4,
+    ELEC_MOP_ADDON: 6,
+    CONSUMABLES_BASE: 55, // Bags (30) + Brushes/Filters (25)
+    CONSUMABLES_PET_PENALTY: 20,
+    CONSUMABLES_MOP: 40,
+    
+    // Maintenance
+    BATTERY_REPLACEMENT_COST: 70,
+    BATTERY_LIFESPAN_YEARS: 3,
+    
+    // Maintenance Labor (Robot isn't 0 labor)
+    ROBOT_MAINTENANCE_MINS_WEEK: 5, // Emptying bin, untangling hair
+    
+    // Water (Mopping)
+    LITRES_PER_MANUAL_MOP: 5
 };
