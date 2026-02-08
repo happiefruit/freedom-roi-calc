@@ -129,7 +129,7 @@ const SimpleTooltip = ({ content, colorClass = "text-slate-400" }: { content: Re
                 <Info size={14} />
             </button>
             {open && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-slate-900 text-white text-xs p-3 rounded-xl shadow-xl z-50 animate-in fade-in zoom-in-95 leading-relaxed text-left cursor-auto">
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 whitespace-normal break-words bg-slate-900 text-white text-xs p-3 rounded-xl shadow-xl z-50 animate-in fade-in zoom-in-95 leading-relaxed text-left cursor-auto">
                     {content}
                     <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-t-8 border-t-slate-900"></div>
                 </div>
@@ -344,9 +344,9 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset, applianceI
             )}
 
             {/* Comparison Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 relative z-30 overflow-visible">
                 {/* Manual */}
-                <div className="bg-white p-6 rounded-3xl border border-slate-200 relative z-20">
+                <div className="bg-white p-6 rounded-3xl border border-slate-200 relative z-30">
                     <div className="relative z-10">
                         <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1 flex items-center">
                             {isDishwasher ? "Hand Washing" : "Manual Cleaning"}
@@ -360,7 +360,7 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset, applianceI
                 </div>
 
                 {/* Machine */}
-                <div className={`p-6 rounded-3xl border relative z-10 ${verdictTier !== 'low' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white border-slate-200'}`}>
+                <div className={`p-6 rounded-3xl border relative z-20 ${verdictTier !== 'low' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white border-slate-200'}`}>
                     <div className="relative z-10">
                         <h3 className={`text-xs font-bold uppercase tracking-widest mb-1 flex items-center ${verdictTier !== 'low' ? 'text-indigo-200' : 'text-slate-400'}`}>
                             {isDishwasher ? "Dishwasher" : "Robot Vacuum"}
