@@ -119,7 +119,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelect }) => {
                     </div>
                     <h3 className="text-2xl font-bold text-slate-900 mb-2">Robot Vacuum</h3>
                     <p className="text-slate-500 text-sm mb-8">
-                        Toy or tool? Calculate the ROI of clean floors based on your home size.
+                        Ditch the broom. Run the numbers to see if automation pays for itself.
                     </p>
                     <div className="flex items-center text-sm font-bold text-indigo-600 group-hover:translate-x-2 transition-transform">
                         Calculate <ChevronRight size={16} className="ml-1" />
