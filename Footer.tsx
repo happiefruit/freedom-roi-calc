@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { AboutModal } from './AboutModal';
+import { Linkedin } from 'lucide-react';
 
 interface FooterProps {
     analyticsAllowed: boolean;
@@ -35,7 +36,9 @@ export const Footer: React.FC<FooterProps> = ({ analyticsAllowed, setAnalyticsAl
                         <span className="text-slate-300">•</span>
                         <a href="https://buymeacoffee.com/happiefruit" className="hover:text-indigo-600 transition-colors">Buy a Coffee ☕</a>
                         <span className="text-slate-300">•</span>
-                        <a href="https://github.com/happiefruit" className="hover:text-indigo-600 transition-colors">GitHub</a>
+                        <a href="https://www.linkedin.com/in/shousuan/" className="hover:text-indigo-600 transition-colors" aria-label="LinkedIn">
+                            <Linkedin size={12} />
+                        </a>
                     </div>
                 </div>
             </footer>
