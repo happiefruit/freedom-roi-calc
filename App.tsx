@@ -53,6 +53,11 @@ const App: React.FC = () => {
 
     }, [analyticsAllowed]);
 
+    // --- Scroll Restoration ---
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [view, selectedAppliance]);
+
     // --- Actions ---
     const handleSelectAppliance = (type: ApplianceType) => {
         setSelectedAppliance(type);
@@ -61,7 +66,6 @@ const App: React.FC = () => {
 
     const handleCalculate = () => {
         setView('result');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleReset = () => {
@@ -69,7 +73,6 @@ const App: React.FC = () => {
         setSelectedAppliance(null);
         setDishwasherData(DEFAULT_DISHWASHER_DATA);
         setRobotData(DEFAULT_ROBOT_DATA);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     // --- Computed ---
