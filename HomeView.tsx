@@ -1,8 +1,13 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { UtensilsCrossed, Shirt, Bot, ChevronRight } from 'lucide-react';
 import { ApplianceType } from './types';
 
 const HERO_VARIANTS = [
+  {
+    headline: "The Household Chores ROI Calculator.",
+    subhead: "Stop arguing. Start calculating. Find out exactly how much time and money you save by automating your home."
+  },
   {
     headline: "Spend your evenings with family, not the sink.",
     subhead: "Your kids grow up fast. Calculate if saving 200 hours a year is cheaper than missing out."
@@ -50,30 +55,42 @@ interface HomeViewProps {
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({ onSelect }) => {
-    const [heroText, setHeroText] = useState(HERO_VARIANTS[0]);
+    // Lazy init for stable random selection on mount.
+    // This avoids content flash and ensures consistent data for tracking.
+    const [heroState] = useState(() => {
+        const idx = Math.floor(Math.random() * HERO_VARIANTS.length);
+        return {
+            variant: HERO_VARIANTS[idx],
+            index: idx
+        };
+    });
+
+    // Ref to ensure tracking fires exactly once, even in Strict Mode
+    const hasTracked = useRef(false);
 
     useEffect(() => {
-        const randomIndex = Math.floor(Math.random() * HERO_VARIANTS.length);
-        const selectedVariant = HERO_VARIANTS[randomIndex];
-        setHeroText(selectedVariant);
+        if (hasTracked.current) return;
 
         if ((window as any).umami) {
             (window as any).umami.track('hero_variant_viewed', {
-                headline: selectedVariant.headline,
-                variant_index: randomIndex
+                headline: heroState.variant.headline,
+                variant_index: heroState.index
             });
+            hasTracked.current = true;
         }
-    }, []);
+    }, [heroState]);
+
+    const { variant } = heroState;
 
     return (
         <div className="w-full max-w-4xl mx-auto px-4 py-12 fade-in">
             {/* Hero Text */}
             <div className="text-center mb-16">
                 <h1 className="text-4xl md:text-6xl font-black text-slate-900 mb-6 leading-tight">
-                    {heroText.headline}
+                    {variant.headline}
                 </h1>
                 <p className="text-xl text-slate-600 mb-8 max-w-2xl mx-auto">
-                    {heroText.subhead}
+                    {variant.subhead}
                 </p>
             </div>
 

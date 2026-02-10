@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { RobotVacuumData } from './types';
 import { Wind, Sparkles, PawPrint, Home, Scale, ChevronRight, Zap, Tag, Hourglass } from 'lucide-react';
@@ -134,7 +135,7 @@ export const RobotVacuumCalculator: React.FC<Props> = ({ data, onChange, onCalcu
                             <span className="text-xl font-bold text-slate-900">{data.homeSize} <span className="text-sm text-slate-400 font-medium">sq ft</span></span>
                         </div>
                         <input 
-                            type="range" min="200" max="4000" step="100" 
+                            type="range" min="200" max="4000" step="10" 
                             value={data.homeSize}
                             onChange={(e) => update('homeSize', parseInt(e.target.value))}
                             className="w-full"
