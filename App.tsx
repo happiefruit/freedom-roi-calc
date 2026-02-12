@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { AppView, ApplianceType, DishwasherData, RobotVacuumData } from './types';
 import { DEFAULT_DISHWASHER_DATA, DEFAULT_ROBOT_DATA } from './constants';
 import { calculateDishwasherROI, calculateRobotVacuumROI } from './utils';
@@ -26,6 +26,7 @@ const App: React.FC = () => {
         return saved !== null ? JSON.parse(saved) : true; // Default to true
     });
 
+    // --- Analytics: Script Injection ---
     useEffect(() => {
         const scriptId = 'umami-script';
         
@@ -52,6 +53,20 @@ const App: React.FC = () => {
         localStorage.setItem('analytics_consent', JSON.stringify(analyticsAllowed));
 
     }, [analyticsAllowed]);
+
+    // --- Analytics: Virtual Page Views ---
+    // Initialize with 'home' to avoid duplicating the automatic initial page view tracked by Umami script.
+    const lastTrackedView = useRef<AppView | null>('home'); 
+
+    useEffect(() => {
+        // Strict Mode / Idempotency Guard
+        if (lastTrackedView.current === view) return;
+
+        if (analyticsAllowed && (window as any).umami) {
+            (window as any).umami.track('page_view', { page: view });
+            lastTrackedView.current = view;
+        }
+    }, [view, analyticsAllowed]);
 
     // --- Scroll Restoration ---
     useEffect(() => {
