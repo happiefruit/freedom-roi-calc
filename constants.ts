@@ -9,7 +9,8 @@ export const DEFAULT_DISHWASHER_DATA: DishwasherData = {
     lunches: 0,
     dinners: 0,
     machineCost: 800,
-    installationType: 'diy'
+    installationType: 'diy',
+    culinaryStyle: 'default'
 };
 
 export const DEFAULT_ROBOT_DATA: RobotVacuumData = {
@@ -51,12 +52,14 @@ export const CONSTANTS = {
     COST_INSTALLATION_PRO: 200, // Avg plumber cost
 
     // Transparency: Mess Coefficients (Items per person per meal)
-    ITEMS_PER_BREAKFAST: 2, // Bowl, Spoon
-    ITEMS_PER_LUNCH: 3,     // Plate, Fork, Glass
-    ITEMS_PER_DINNER: 6,    // Plate, Cutlery, Glass, Pot/Pan share (aggregated)
+    // NOTE: These are now base values modified by CULINARY_PROFILES in utils
+    ITEMS_PER_BREAKFAST: 2, 
+    ITEMS_PER_LUNCH: 3,     
+    ITEMS_PER_DINNER: 6,    
     
     // Machine Capacity (Total individual items standard load)
-    DISHWASHER_CAPACITY: 45
+    // Recalibrated to 110 (Approx 12 Place Settings x 9 items + extras)
+    DISHWASHER_CAPACITY: 110
 };
 
 export const ROBOT_CONSTANTS = {
@@ -76,4 +79,37 @@ export const ROBOT_CONSTANTS = {
     
     // Water (Mopping)
     LITRES_PER_MANUAL_MOP: 5
+};
+
+export const CULINARY_PROFILES = {
+    default: {
+        small: 1.0,  // Bowls/Cups
+        plates: 1.0, // Large Plates
+        pots: 1.0,   // Cookware
+        utensils: 1.0,
+        rackBias: 'balanced'
+    },
+    asia: {
+        // Targeted for: 2 Pax Meal = 9 Small (Prep+Serving), 0 Plates, 2 Pots, 4 Utensils
+        // Math: Multiplier = Target / (Factor[2] * Base)
+        small: 1.5,  // 9 / (2*3) = 1.5
+        plates: 0.1, // Near zero large plates
+        pots: 2.0,   // 2 / (2*0.5) = 2.0
+        utensils: 0.7, // 4 / (2*3) = 0.66
+        rackBias: 'top_rack_bottleneck'
+    },
+    europe: {
+        small: 2.0,
+        plates: 2.5, // Multi-course plating
+        pots: 3.5,   // Heavy course-based cookware
+        utensils: 3.0, // Fork/Knife/Spoon x Courses
+        rackBias: 'bottom_rack_bottleneck'
+    },
+    usa: {
+        small: 0.5,
+        plates: 1.5, // Large plates (28cm+)
+        pots: 2.0,   // Baking sheets, large pans
+        utensils: 2.0,
+        rackBias: 'spacing_inefficiency' // Need gap for spray arms
+    }
 };

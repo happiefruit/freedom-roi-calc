@@ -23,7 +23,8 @@ import {
     Gamepad2,
     Dumbbell,
     Flower2,
-    MapPin
+    MapPin,
+    Droplets
 } from 'lucide-react';
 
 interface Props {
@@ -60,7 +61,7 @@ const FUN_TIME_UNITS = [
     {
         label: "Gaming Wins",
         ratio: 0.5, // ~30 min ranked match
-        text: (v: string) => `${v} ranked matches you could have carried.`,
+        text: "{v} ranked matches you could have carried.",
         icon: Gamepad2,
         color: "text-violet-500",
         bg: "bg-violet-50"
@@ -68,7 +69,7 @@ const FUN_TIME_UNITS = [
     {
         label: "Gym Gains",
         ratio: 1.5, // ~90 min workout
-        text: (v: string) => `${v} full gym sessions (including leg day).`,
+        text: "{v} full gym sessions (including leg day).",
         icon: Dumbbell,
         color: "text-emerald-600",
         bg: "bg-emerald-50"
@@ -76,7 +77,7 @@ const FUN_TIME_UNITS = [
     {
         label: "Pilates/Yoga",
         ratio: 1.0, // 1 hour class
-        text: (v: string) => `${v} 'Pilates Princess' classes.`,
+        text: "{v} 'Pilates Princess' classes.",
         icon: Flower2,
         color: "text-rose-400",
         bg: "bg-rose-50"
@@ -84,7 +85,7 @@ const FUN_TIME_UNITS = [
     {
         label: "Power Naps",
         ratio: 0.33, // 20 mins
-        text: (v: string) => `${v} guilt-free power naps.`,
+        text: "{v} guilt-free power naps.",
         icon: Bed,
         color: "text-indigo-500",
         bg: "bg-indigo-50"
@@ -92,7 +93,7 @@ const FUN_TIME_UNITS = [
     {
         label: "Doomscrolling",
         ratio: 1.0, // 1 hour
-        text: (v: string) => `${v} hours of dissociation on TikTok.`,
+        text: "{v} hours of dissociation on TikTok.",
         icon: Smartphone,
         color: "text-pink-500",
         bg: "bg-pink-50"
@@ -100,7 +101,7 @@ const FUN_TIME_UNITS = [
     {
         label: "Netflix Binges",
         ratio: 0.75, // ~45 min episode
-        text: (v: string) => `${v} episodes of that show you're re-watching.`,
+        text: "{v} episodes of that show you're re-watching.",
         icon: Tv,
         color: "text-red-500",
         bg: "bg-red-50"
@@ -108,7 +109,7 @@ const FUN_TIME_UNITS = [
     {
         label: "Reading",
         ratio: 0.5, // ~30 mins per chapter
-        text: (v: string) => `${v} chapters of the book on your nightstand.`,
+        text: "{v} chapters of the book on your nightstand.",
         icon: BookOpen,
         color: "text-amber-600",
         bg: "bg-amber-50"
@@ -139,12 +140,72 @@ const SimpleTooltip = ({ content, colorClass = "text-slate-400" }: { content: Re
     )
 };
 
+// --- Fun Fact Carousel Component ---
+const FunFactCarousel = ({ facts }: { facts: any[] }) => {
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [isPaused, setIsPaused] = useState(false);
+
+    useEffect(() => {
+        if (isPaused || facts.length <= 1) return;
+        
+        const interval = setInterval(() => {
+            setCurrentIndex((prevIndex) => 
+                prevIndex === facts.length - 1 ? 0 : prevIndex + 1
+            );
+        }, 5000); // 5-second interval
+        
+        return () => clearInterval(interval);
+    }, [facts.length, isPaused]);
+
+    if (facts.length === 0) return null;
+
+    const fact = facts[currentIndex];
+    const Icon = fact.icon;
+
+    return (
+        <div 
+            className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden min-h-[140px] flex items-center transition-all"
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+        >
+             <div key={currentIndex} className="flex items-center gap-4 w-full animate-in slide-in-from-right-8 fade-in duration-500 fill-mode-forwards">
+                <div className={`p-3 rounded-2xl shrink-0 ${fact.bg} ${fact.color}`}>
+                    <Icon size={24} />
+                </div>
+                <div>
+                    <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                        {fact.label}
+                    </div>
+                    <div className="text-3xl font-black text-slate-900 leading-none mb-1">
+                        {fact.displayValue}
+                    </div>
+                    <div className="text-xs text-slate-500 font-medium leading-tight">
+                        {fact.text}
+                    </div>
+                </div>
+             </div>
+             
+             {/* Progress indicators */}
+             {facts.length > 1 && (
+                 <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                    {facts.map((_, i) => (
+                        <div 
+                            key={i} 
+                            className={`h-1.5 rounded-full transition-all duration-300 ${i === currentIndex ? 'w-4 bg-indigo-500' : 'w-1.5 bg-slate-200'}`} 
+                        />
+                    ))}
+                 </div>
+             )}
+        </div>
+    );
+};
+
 export const ResultsView: React.FC<Props> = ({ result, data, onReset, applianceId }) => {
     
     // State for dynamic content
     const [content, setContent] = useState<any>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    
+
     // Identify Appliance Type & Config
     const isDishwasher = applianceId === 'dishwasher';
     const ScheduleIcon = isDishwasher ? Utensils : Sparkles;
@@ -178,19 +239,68 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset, applianceI
             }
         }
 
-        // Fun Units (Random selection)
-        const randomTime = FUN_TIME_UNITS[Math.floor(Math.random() * FUN_TIME_UNITS.length)];
-
         setContent({
             headline: selectedHeadline,
-            subhead: selectedSubhead,
-            timeUnit: {
-                ...randomTime,
-                val: Math.max(0, result.hoursSavedPerYear) / randomTime.ratio
-            }
+            subhead: selectedSubhead
         });
 
     }, [result, verdictTier, applianceId]); 
+
+    // Generate Facts List for Carousel
+    const facts = useMemo(() => {
+        const list = [];
+
+        // 1. Time Facts
+        // Shuffle and pick up to 4 distinct random ones
+        const shuffledTime = [...FUN_TIME_UNITS].sort(() => 0.5 - Math.random());
+        
+        for (const unit of shuffledTime) {
+            const val = Math.max(0, result.hoursSavedPerYear) / unit.ratio;
+            if (val >= 1) {
+                 list.push({
+                     label: unit.label,
+                     value: val,
+                     displayValue: formatNumber(val),
+                     text: unit.text.replace('{v}', formatNumber(val)),
+                     icon: unit.icon,
+                     color: unit.color,
+                     bg: unit.bg
+                 });
+            }
+            if (list.length >= 4) break;
+        }
+        
+        // 2. Water Fact (if relevant and significant)
+        if (result.litresSavedPerYear > 50) {
+            const bathtubs = result.litresSavedPerYear / 150; // ~150L per bathtub
+            if (bathtubs >= 1) {
+                 list.unshift({ // Add to front for visibility
+                    label: "H2O Saved",
+                    value: bathtubs,
+                    displayValue: formatNumber(bathtubs),
+                    text: `Equivalent to ${formatNumber(bathtubs)} full bathtubs saved.`,
+                    icon: Droplets,
+                    color: "text-blue-500",
+                    bg: "bg-blue-50"
+                });
+            }
+        }
+        
+        // Fallback if list is empty (e.g. 0 hours saved)
+        if (list.length === 0) {
+             list.push({
+                 label: "Time Saved",
+                 value: result.hoursSavedPerYear,
+                 displayValue: formatNumber(result.hoursSavedPerYear),
+                 text: "Hours reclaimed per year.",
+                 icon: RotateCcw,
+                 color: "text-slate-500",
+                 bg: "bg-slate-50"
+             });
+        }
+
+        return list;
+    }, [result]);
 
     // Lock Body Scroll when Modal is open
     useEffect(() => {
@@ -407,25 +517,7 @@ export const ResultsView: React.FC<Props> = ({ result, data, onReset, applianceI
             {/* Fun Units Grid */}
             <h3 className="text-sm font-bold text-slate-900 mb-4 px-2">What you could have done instead</h3>
             <div className="grid grid-cols-1 gap-4 mb-8">
-                
-                {/* Time Fun Unit */}
-                <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
-                    <div className={`p-3 rounded-2xl ${content.timeUnit.bg} ${content.timeUnit.color}`}>
-                        <content.timeUnit.icon size={24} />
-                    </div>
-                    <div>
-                        <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                            {content.timeUnit.label}
-                        </div>
-                        <div className="text-3xl font-black text-slate-900 leading-none mb-1">
-                            {formatNumber(content.timeUnit.val)}
-                        </div>
-                        <div className="text-xs text-slate-500 font-medium leading-tight">
-                            {content.timeUnit.text(formatNumber(content.timeUnit.val))}
-                        </div>
-                    </div>
-                </div>
-
+                <FunFactCarousel facts={facts} />
             </div>
 
             {/* Savings Breakdown */}

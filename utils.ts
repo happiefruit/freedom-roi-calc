@@ -1,6 +1,6 @@
 
 import { DishwasherData, RobotVacuumData, CalculationResult } from './types';
-import { CONSTANTS, ROBOT_CONSTANTS } from './constants';
+import { CONSTANTS, ROBOT_CONSTANTS, CULINARY_PROFILES } from './constants';
 
 export const calculateDishwasherROI = (data: DishwasherData): CalculationResult => {
     const { 
@@ -10,33 +10,102 @@ export const calculateDishwasherROI = (data: DishwasherData): CalculationResult 
         lunches,
         dinners, 
         machineCost, 
-        installationType 
+        installationType,
+        culinaryStyle
     } = data;
 
-    // 1. Annual Usage (Transparent Item Count Logic)
-    // We calculate total dirty items generated per week based on meal frequency and household size.
+    // 1. Culinary Profile & Rack Physics
+    const profile = CULINARY_PROFILES[culinaryStyle];
     
-    const weeklyBreakfastItems = breakfasts * householdSize * CONSTANTS.ITEMS_PER_BREAKFAST;
-    const weeklyLunchItems = lunches * householdSize * CONSTANTS.ITEMS_PER_LUNCH;
-    const weeklyDinnerItems = dinners * householdSize * CONSTANTS.ITEMS_PER_DINNER;
+    // Base "Meal Units" (How many times people eat)
+    const totalWeeklyMeals = (breakfasts + lunches + dinners) * householdSize;
+    const cookingStyleLabel = `${breakfasts + lunches + dinners} meals/wk`;
 
-    const totalWeeklyItems = weeklyBreakfastItems + weeklyLunchItems + weeklyDinnerItems;
+    // Item Generation (Regional Multipliers)
+    // We assume a base "Dinner" has the full profile load, lighter meals have partial.
+    // Weighted avg: Dinner (100%), Lunch (50%), Breakfast (30%)
+    const weightedMealFactor = ((breakfasts * 0.3) + (lunches * 0.5) + (dinners * 1.0)) * householdSize;
+
+    // RECALIBRATED BASE MULTIPLIERS (Home Cook Reality)
+    const weeklySmallItems = weightedMealFactor * 3.0 * profile.small;   
+    const weeklyLargePlates = weightedMealFactor * 2.0 * profile.plates; 
+    const weeklyPots = weightedMealFactor * 0.5 * profile.pots;          
+    const weeklyUtensils = weightedMealFactor * 3.0 * profile.utensils;  
     
-    // Calculate raw loads based on capacity
-    let loadsPerWeek = totalWeeklyItems / CONSTANTS.DISHWASHER_CAPACITY;
+    const totalWeeklyItems = weeklySmallItems + weeklyLargePlates + weeklyPots + weeklyUtensils;
+
+    // --- RACK PHYSICS ALGORITHM ---
+    // Capacities (Arbitrary Physics Units based on standard 24" Tub)
+    // Recalibrated: Top rack holds ~50 small items, Bottom holds ~35 plate "slots"
+    const TOP_RACK_CAPACITY = 50; 
+    const BOTTOM_RACK_CAPACITY = 35; 
+    const POT_COST = 5; // 1 Pot = 5 Plate slots
+    const UTENSIL_BATCH_COST = 0.05; // Per piece (Basket efficiency)
+
+    let topRackLoad = 0;
+    let bottomRackLoad = 0;
+
+    // Calculate usage based on profile bias
+    if (profile.rackBias === 'top_rack_bottleneck') {
+        // Asia: Top rack fills with bowls/sauce dishes fast. 
+        topRackLoad = weeklySmallItems / TOP_RACK_CAPACITY;
+        // Bottom rack is plates + woks.
+        bottomRackLoad = (weeklyLargePlates + (weeklyPots * POT_COST)) / BOTTOM_RACK_CAPACITY;
     
-    // Floor logic: If they cook at all, assume at least 0.5 loads/week (smell factor/batching)
-    if (totalWeeklyItems > 0 && loadsPerWeek < 0.5) {
-        loadsPerWeek = 0.5;
+    } else if (profile.rackBias === 'spacing_inefficiency') {
+        // USA: Large items need "Every-other-tine" spacing (1.5x footprint)
+        topRackLoad = weeklySmallItems / TOP_RACK_CAPACITY;
+        
+        // Bottom rack: Plates are fat, Baking sheets are tall.
+        const spacedPlateCost = 1.5; 
+        bottomRackLoad = ((weeklyLargePlates * spacedPlateCost) + (weeklyPots * POT_COST)) / BOTTOM_RACK_CAPACITY;
+
+    } else {
+        // Europe / Default: Standard linear filling
+        topRackLoad = weeklySmallItems / TOP_RACK_CAPACITY;
+        bottomRackLoad = (weeklyLargePlates + (weeklyPots * POT_COST)) / BOTTOM_RACK_CAPACITY;
     }
 
-    const loadsPerYear = loadsPerWeek * 52;
+    // Add Utensils (negligible but present)
+    const utensilLoad = (weeklyUtensils * UTENSIL_BATCH_COST) / BOTTOM_RACK_CAPACITY;
+    bottomRackLoad += utensilLoad;
 
-    // 2. Manual Washing Costs (Annual)
-    // Defaulting to "Tap" method (worst case) as per simplification requirement
-    const manualTimeHours = (loadsPerYear * CONSTANTS.TIME_MANUAL_WASH_PER_LOAD) / 60;
+    // The Bottle Neck: The machine runs when the fullest rack is full.
+    let loadsPerWeek = Math.max(topRackLoad, bottomRackLoad);
+
+    // --- HYGIENE FLOOR ---
+    // A dishwasher should run at least every ~3 days (2.3 times/week) to prevent odors/mold,
+    // even if it's not full.
+    let isHygieneTriggered = false;
+    
+    if (totalWeeklyMeals > 0) {
+        if (loadsPerWeek < 2.3) {
+            loadsPerWeek = 2.3;
+            isHygieneTriggered = true;
+        }
+    } else {
+        // No meals, no loads
+        loadsPerWeek = 0;
+    }
+
+    // Calculate Efficiency: How "full" the machine is on average based on item count vs theoretical capacity
+    const theoreticalMaxItems = loadsPerWeek * CONSTANTS.DISHWASHER_CAPACITY;
+    const rackEfficiency = theoreticalMaxItems > 0 
+        ? Math.round((totalWeeklyItems / theoreticalMaxItems) * 100) 
+        : 0;
+
+    // 2. Manual Washing Costs (Regional Tedium Adjustment)
+    const loadsPerYear = loadsPerWeek * 52;
+    
+    let manualMinutesPerLoad = CONSTANTS.TIME_MANUAL_WASH_PER_LOAD; // Base 20
+    
+    if (culinaryStyle === 'asia') manualMinutesPerLoad = 15; // Fast, small items
+    if (culinaryStyle === 'europe') manualMinutesPerLoad = 25; // Scrubbing heavy pots
+    if (culinaryStyle === 'usa') manualMinutesPerLoad = 20; // Average
+    
+    const manualTimeHours = (loadsPerYear * manualMinutesPerLoad) / 60;
     const manualWaterLitres = loadsPerYear * CONSTANTS.WATER_MANUAL_TAP_PER_LOAD;
-    const manualEnergyKwh = manualWaterLitres * CONSTANTS.ENERGY_TO_HEAT_WATER_LITRE; // Heating the water
+    const manualEnergyKwh = manualWaterLitres * CONSTANTS.ENERGY_TO_HEAT_WATER_LITRE; 
     
     const costManualTime = manualTimeHours * timeValue;
     const costManualWater = manualWaterLitres * CONSTANTS.COST_WATER_PER_LITRE;
@@ -45,10 +114,10 @@ export const calculateDishwasherROI = (data: DishwasherData): CalculationResult 
 
     const annualManualCost = costManualTime + costManualWater + costManualEnergy + costManualSoap;
 
-    // 3. Machine Washing Costs (Annual)
+    // 3. Machine Costs
     const machineTimeHours = (loadsPerYear * CONSTANTS.TIME_MACHINE_LOAD_UNLOAD) / 60;
     const machineWaterLitres = loadsPerYear * CONSTANTS.WATER_MACHINE_PER_LOAD;
-    const machineEnergyKwh = (loadsPerYear * CONSTANTS.ENERGY_MACHINE_OPERATIONAL); // Includes heating
+    const machineEnergyKwh = (loadsPerYear * CONSTANTS.ENERGY_MACHINE_OPERATIONAL); 
     
     const costMachineTime = machineTimeHours * timeValue;
     const costMachineWater = machineWaterLitres * CONSTANTS.COST_WATER_PER_LITRE;
@@ -57,23 +126,29 @@ export const calculateDishwasherROI = (data: DishwasherData): CalculationResult 
 
     const annualMachineOpCost = costMachineTime + costMachineWater + costMachineEnergy + costMachineSoap;
 
-    // 4. Investment
+    // 4. Results
     const upfrontCost = machineCost + (installationType === 'pro' ? CONSTANTS.COST_INSTALLATION_PRO : 0);
-
-    // 5. Ten Year Projection
     const tenYearManualCost = annualManualCost * 10;
     const tenYearMachineCost = upfrontCost + (annualMachineOpCost * 10);
     const netSavings10Year = tenYearManualCost - tenYearMachineCost;
 
-    // 6. Savings Metrics
     const hoursSavedPerYear = manualTimeHours - machineTimeHours;
     const litresSavedPerYear = manualWaterLitres - machineWaterLitres;
     
     const totalAnnualBenefit = annualManualCost - annualMachineOpCost;
     const breakEvenMonths = totalAnnualBenefit > 0 ? (upfrontCost / totalAnnualBenefit) * 12 : 999;
 
-    // Roast Logic: If they are cooking > 5 dinners a week or generating massive load volume
-    const isRestaurantMode = dinners >= 6 || loadsPerWeek > 10;
+    // Region Specific Caveats
+    let regionCaveat = undefined;
+    if (culinaryStyle === 'usa') {
+        regionCaveat = "Only worth it if your large cookware (baking sheets, big pots) is dishwasher-safe. If you hand-wash those, your ROI drops by ~40%.";
+    } else if (culinaryStyle === 'asia') {
+        regionCaveat = "Your top rack fills up 3x faster than the bottom. Look for models with a '3rd Rack' for chopsticks/utensils to optimize density.";
+    } else if (culinaryStyle === 'europe') {
+        regionCaveat = "Your multi-course meals create heavy bottom-rack loads. Ensure your machine has 'Foldable Tines' to fit large pots.";
+    }
+
+    const regionLabel = culinaryStyle === 'usa' ? 'USA' : culinaryStyle.charAt(0).toUpperCase() + culinaryStyle.slice(1);
 
     return {
         tenYearManualCost,
@@ -83,28 +158,38 @@ export const calculateDishwasherROI = (data: DishwasherData): CalculationResult 
         litresSavedPerYear,
         breakEvenMonths,
         isWorthIt: netSavings10Year > 0,
-        isRestaurantMode,
-        // Chart Data Support
+        isRestaurantMode: loadsPerWeek > 14, // High usage flag
         upfrontCost,
         annualManualCost,
         annualMachineOpCost,
         loadsPerWeek,
-        // Transparency
         itemBreakdown: {
-            weeklyBreakfastItems,
-            weeklyLunchItems,
-            weeklyDinnerItems,
-            totalWeeklyItems
+            weeklyBreakfastItems: 0, 
+            weeklyLunchItems: 0,
+            weeklyDinnerItems: 0,
+            totalWeeklyItems: Math.round(totalWeeklyItems)
         },
+        breakdown: {
+            bowls: Math.round(weeklySmallItems),
+            plates: Math.round(weeklyLargePlates),
+            pots: Math.round(weeklyPots),
+            utensils: Math.round(weeklyUtensils)
+        },
+        rackEfficiency,
+        isHygieneTriggered,
         inputs: {
             frequency: parseFloat(loadsPerWeek.toFixed(1)),
-            duration: CONSTANTS.TIME_MANUAL_WASH_PER_LOAD,
+            duration: manualMinutesPerLoad,
             rate: timeValue,
-            periodLabel: 'loads/wk'
+            periodLabel: 'loads/wk',
+            people: householdSize,
+            cookingStyle: cookingStyleLabel,
+            region: regionLabel
         },
         annualManualLaborCost: costManualTime,
         annualManualLaborHours: manualTimeHours,
-        annualManualSuppliesCost: costManualWater + costManualEnergy + costManualSoap
+        annualManualSuppliesCost: costManualWater + costManualEnergy + costManualSoap,
+        regionCaveat
     };
 };
 

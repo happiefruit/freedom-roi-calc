@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { DishwasherData } from './types';
-import { Wrench, Clock, ChefHat } from 'lucide-react';
+import { Wrench, Clock, ChefHat, Globe2 } from 'lucide-react';
 
 interface Props {
     data: DishwasherData;
@@ -57,6 +57,34 @@ export const DishwasherCalculator: React.FC<Props> = ({ data, onChange, onCalcul
 
             <div className="space-y-6">
                 
+                {/* 0. Culinary Style (New) */}
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-purple-100 text-purple-600 rounded-lg">
+                            <Globe2 size={20} />
+                        </div>
+                        <label className="font-bold text-slate-900">Kitchen Region</label>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2 bg-slate-100 p-1.5 rounded-xl">
+                        {(['default', 'asia', 'europe', 'usa'] as const).map((style) => (
+                            <button
+                                key={style}
+                                onClick={() => update('culinaryStyle', style)}
+                                className={`py-2 px-1 rounded-lg text-xs font-bold transition-all ${
+                                    data.culinaryStyle === style 
+                                    ? 'bg-white text-indigo-600 shadow-sm' 
+                                    : 'text-slate-500 hover:text-slate-700'
+                                }`}
+                            >
+                                {style === 'usa' ? 'USA' : style.charAt(0).toUpperCase() + style.slice(1)}
+                            </button>
+                        ))}
+                    </div>
+                    <p className="mt-3 text-xs text-slate-400">
+                        Adjusts for regional dishware sizes (e.g. Rice bowls vs. Pasta plates).
+                    </p>
+                </div>
+
                 {/* 1. Time Value */}
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
                     <div className="flex items-center gap-3 mb-4">
@@ -83,7 +111,7 @@ export const DishwasherCalculator: React.FC<Props> = ({ data, onChange, onCalcul
                     </p>
                 </div>
 
-                {/* 2. Kitchen Output (New Section) */}
+                {/* 2. Kitchen Output */}
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="p-2 bg-orange-100 text-orange-600 rounded-lg">
@@ -177,12 +205,9 @@ export const DishwasherCalculator: React.FC<Props> = ({ data, onChange, onCalcul
                     onClick={() => {
                         if ((window as any).umami) {
                             (window as any).umami.track('calculate_truth_clicked', {
+                                region: data.culinaryStyle,
                                 hourly_rate: data.timeValue,
                                 household_size: data.householdSize,
-                                // New Tracking Fields
-                                meals_breakfast: data.breakfasts,
-                                meals_lunch: data.lunches,
-                                meals_dinner: data.dinners,
                                 machine_cost: data.machineCost,
                                 installation: data.installationType // 'diy' or 'pro'
                             });

@@ -1,6 +1,7 @@
 
 export type AppView = 'home' | 'calculator' | 'result';
 export type ApplianceType = 'dishwasher' | 'dryer' | 'robot-vacuum';
+export type CulinaryStyle = 'default' | 'asia' | 'europe' | 'usa';
 
 export interface DishwasherData {
     timeValue: number;          // $/hr
@@ -13,6 +14,9 @@ export interface DishwasherData {
 
     machineCost: number;        // $
     installationType: 'diy' | 'pro';
+    
+    // New: Regional Profile
+    culinaryStyle: CulinaryStyle;
 }
 
 export interface RobotVacuumData {
@@ -52,6 +56,17 @@ export interface CalculationResult {
         weeklyDinnerItems: number;
         totalWeeklyItems: number;
     };
+    
+    // Detailed Item Breakdown for Tooltip
+    breakdown?: {
+        bowls: number;
+        plates: number;
+        pots: number;
+        utensils: number;
+    };
+    
+    rackEfficiency?: number; // New metric
+    isHygieneTriggered?: boolean; // New flag for low-usage hygiene floor
 
     // New transparency inputs for tooltips
     inputs: {
@@ -59,12 +74,20 @@ export interface CalculationResult {
         duration: number;    // e.g., 20 mins/session
         rate: number;        // e.g., $50/hr
         periodLabel: string; // "loads/week" or "sessions/week"
+        
+        // Added for Trust/Context
+        people?: number;
+        cookingStyle?: string;
+        region?: string;
     };
     
     // Detailed Breakdown for Manual
     annualManualLaborCost: number;
     annualManualLaborHours: number;
     annualManualSuppliesCost: number; // Water + Energy + Soap
+    
+    // New: Regional specific advice
+    regionCaveat?: string;
 }
 
 // Union type for future extensibility
